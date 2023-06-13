@@ -9,7 +9,7 @@
   "documentation": "https://github.com/loopj/hass-vantage",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/loopj/hass-vantage/issues",
-  "requirements": [],
+  "requirements": ["aiovantage==0.1.0"],
   "version": "0.1.0",
   "zeroconf": [
     {"type": "_secure_aci._tcp.local.", "name": "*infusion*"}
