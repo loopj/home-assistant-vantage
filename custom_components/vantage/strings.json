@@ -1,0 +1,30 @@
+{
+  "config": {
+    "error": {
+      "cannot_connect": "Unable to connect to the controller.",
+      "invalid_auth": "Unable to connect using the provided username and password."
+    },
+    "step": {
+      "auth": {
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        },
+        "description": "This Vantage InFusion controller requires authentication. Please enter your Vantage username and password.",
+        "title": "Configure authentication"
+      },
+      "user": {
+        "data": {
+          "host": "Hostname of controller",
+          "ssl": "Should we use SSL"
+        },
+        "description": "Please enter connection settings for your Vantage InFusion controller.",
+        "title": "Configure host"
+      },
+      "confirm": {
+        "description": "Do you want to add the Vantage InFusion controller to Home Assistant?",
+        "title": "Discovered Vantage InFusion controller"
+      }
+    }
+  }
+}
