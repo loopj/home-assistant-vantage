@@ -9,7 +9,12 @@ from homeassistant.helpers import device_registry as dr
 
 from .const import DOMAIN
 
-PLATFORMS: list[Platform] = [Platform.COVER, Platform.LIGHT, Platform.SWITCH]
+PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.COVER,
+    Platform.LIGHT,
+    Platform.SWITCH,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
