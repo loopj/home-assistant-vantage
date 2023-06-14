@@ -14,9 +14,6 @@ async def async_setup_entry(
     # Get the client from the hass data store
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
-    # Fetch loads from the Vantage controller
-    await vantage.loads.initialize()
-
     # Relay Load objects are switches
     async for load in vantage.loads.relays:
         entity = VantageRelay(vantage, load)
