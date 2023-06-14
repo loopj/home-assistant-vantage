@@ -1,5 +1,5 @@
 from aiovantage import Vantage
-from aiovantage.config_client.objects import Area, Load
+from aiovantage.config_client.objects import Load
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -19,15 +19,17 @@ async def async_setup_entry(
 
     # Relay Load objects are switches
     async for load in vantage.loads.relays:
-        area = await vantage.areas.aget(load.area_id)
-        entity = VantageRelay(vantage, load, area)
-
+        entity = VantageRelay(vantage, load)
+        await entity.fetch_relations()
         async_add_entities([entity])
 
 
 class VantageRelay(VantageEntity[Load], SwitchEntity):
-    def __init__(self, client: Vantage, obj: Load, area: Area):
-        VantageEntity.__init__(self, client, client.loads, obj, area)
+    """Representation of a Vantage relay."""
+
+    def __init__(self, client: Vantage, obj: Load):
+        """Initialize a Vantage relay."""
+        super().__init__(client, client.loads, obj)
 
     @property
     def is_on(self) -> bool | None:
