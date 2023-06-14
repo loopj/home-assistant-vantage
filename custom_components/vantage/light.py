@@ -1,5 +1,5 @@
 from aiovantage import Vantage
-from aiovantage.config_client.objects import Area, Load, RGBLoad
+from aiovantage.config_client.objects import Load, LoadGroup, RGBLoad
 from homeassistant.components.group.light import LightGroup
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -15,8 +15,8 @@ from homeassistant.components.light import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.util.color import color_hsv_to_RGB as hsv_to_rgb
 
 from .const import DOMAIN
@@ -30,44 +30,41 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage Light from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    registry = async_get_entity_registry(hass)
 
     # Non-motor, and non-relay Load object are lights
     async for load in vantage.loads.lights:
-        area = await vantage.areas.aget(load.area_id)
-        entity = VantageLight(vantage, load, area)
-
+        entity = VantageLight(vantage, load)
+        await entity.fetch_relations()
         async_add_entities([entity])
 
     # All RGBLoad objects are lights
     async for rgb_load in vantage.rgb_loads:
-        area = await vantage.areas.aget(rgb_load.area_id)
-        entity = VantageRGBLight(vantage, rgb_load, area)
-
+        entity = VantageRGBLight(vantage, rgb_load)
+        await entity.fetch_relations()
         async_add_entities([entity])
 
     # Setup LoadGroups as LightGroups
-    registry = er.async_get(hass)
     async for load_group in vantage.load_groups:
-        # Get the entity IDs of the loads in the group
-        load_entities = [
-            registry.async_get_entity_id(Platform.LIGHT, DOMAIN, str(load_id))
-            for load_id in load_group.load_ids
-        ]
+        # Get the load ids for the group, and look up their HA entity ids
+        entity_ids = []
+        for load_id in load_group.load_ids:
+            id = registry.async_get_entity_id(Platform.LIGHT, DOMAIN, str(load_id))
+            if id is not None:
+                entity_ids.append(id)
 
-        # Remove any entities that aren't lights
-        load_entities = [e for e in load_entities if e is not None]
-
-        async_add_entities(
-            [LightGroup(load_group.id, load_group.name, load_entities, None)]
-        )
+        # Create the group entity and add it to HA
+        entity = VantageLightGroup(vantage, load_group, entity_ids)
+        await entity.fetch_relations()
+        async_add_entities([entity])
 
 
 class VantageLight(VantageEntity[Load], LightEntity):
     """Representation of a Vantage Light."""
 
-    def __init__(self, client: Vantage, obj: Load, area: Area):
-        """Initialize a Vantage Light."""
-        super().__init__(client, client.loads, obj, area)
+    def __init__(self, client: Vantage, obj: Load):
+        """Initialize the light."""
+        super().__init__(client, client.loads, obj)
 
         self._attr_supported_color_modes = set()
 
@@ -105,8 +102,11 @@ class VantageLight(VantageEntity[Load], LightEntity):
 
 
 class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
-    def __init__(self, client: Vantage, obj: RGBLoad, area: Area):
-        VantageEntity.__init__(self, client, client.rgb_loads, obj, area)
+    """Representation of a Vantage RGB Light."""
+
+    def __init__(self, client: Vantage, obj: RGBLoad):
+        """Initialize the light."""
+        super().__init__(client, client.rgb_loads, obj)
 
         self._attr_supported_color_modes = set()
         if obj.color_type == RGBLoad.ColorType.HSL:
@@ -141,6 +141,7 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
     @property
     def hs_color(self) -> tuple[float, float] | None:
+        """Return the hue and saturation color value [float, float]."""
         if self.obj.hsl is None:
             return None
 
@@ -148,6 +149,7 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
     @property
     def rgb_color(self) -> tuple[int, int, int] | None:
+        """Return the rgb color value [int, int, int]."""
         if self.obj.rgb is None:
             return None
 
@@ -155,6 +157,7 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
     @property
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
+        """Return the rgbw color value [int, int, int, int]."""
         if self.obj.rgbw is None:
             return None
 
@@ -162,12 +165,14 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
     @property
     def color_temp_kelvin(self) -> int | None:
+        """Return the CT color value in Kelvin."""
         if self.obj.color_temp is None:
             return None
 
         return self.obj.color_temp
 
     async def async_turn_on(self, **kwargs) -> None:
+        """Turn the light on."""
         if ATTR_BRIGHTNESS in kwargs:
             level = (kwargs[ATTR_BRIGHTNESS] * 100) / 255
         else:
@@ -210,3 +215,16 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
         await self.client.rgb_loads.turn_off(
             self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
         )
+
+
+class VantageLightGroup(VantageEntity[LoadGroup], LightGroup):
+    """Representation of a Vantage light group."""
+
+    def __init__(self, client: Vantage, obj: LoadGroup, entities: list[str]):
+        """Initialize a light group."""
+        VantageEntity.__init__(self, client, client.load_groups, obj)
+        LightGroup.__init__(self, obj.id, obj.name, entities, None)
+
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added to hass."""
+        await LightGroup.async_added_to_hass(self)
