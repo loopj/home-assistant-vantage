@@ -1,17 +1,21 @@
-# Home Assistant integration for Vantage
+# Vantage InFusion integration for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
 
-
-## Features
-
-- Supports lights, shades, and dry contacts.
-- Automatic Vantage controller discovery via mDNS.
+The features of this integration include:
+- Controlling Vantage devices (lights, shades, motion sensors, etc) as Home Assistant entities.
+- Automatic Vantage controller discovery (via mDNS).
 - UI-based configuration (config flow).
-- Uses Python asyncio for non-blocking I/O, via [aiovantage](https://github.com/loopj/aiovantage).
+- Entity state updated using [Local Push](https://www.home-assistant.io/blog/2016/02/12/classifying-the-internet-of-things/#classifiers).
+- Non-blocking I/O, via asyncio and [aiovantage](https://github.com/loopj/aiovantage).
 - Uses SSL connections by default, with automatic reconnection.
+
+
+## Prerequisites
+
+If your Vantage controller has authentication enabled (most do by default) you'll need to know the username and password to continue. If you don't have your username and password, it is easy to reset them if you have physical access to the controller, do a google search for "vantage infusion reset password". Alternatively, if you are working with a Vantage dealer, they can provide these credentials.
 
 
 ## Installation
