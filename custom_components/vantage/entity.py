@@ -55,7 +55,7 @@ class VantageEntity(Generic[T], Entity):
     async def fetch_relations(self) -> None:
         """Fetch related objects from the Vantage controller."""
         self.master = await self.client.masters.aget(self.obj.master_id)
-        if isinstance(self.obj, LocationObject):
+        if isinstance(self.obj, LocationObject) and self.obj.area_id:
             self.area = await self.client.areas.aget(self.obj.area_id)
 
     async def async_added_to_hass(self) -> None:
