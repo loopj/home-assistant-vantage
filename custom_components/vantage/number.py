@@ -30,7 +30,7 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
         """Initialize a Vantage number variable."""
         super().__init__(client, client.gmem, obj)
 
-        match obj.tag:
+        match obj.tag.type:
             case "DeviceUnits":
                 # Generic fixed-precision unsigned measurement unit
                 self._attr_native_min_value = 0
@@ -65,14 +65,14 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
                 self._attr_device_class = NumberDeviceClass.TEMPERATURE
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
-        if self.display_as_fixed:
+        if self.obj.is_fixed:
             self._attr_native_step = 0.001
 
     @property
     def native_value(self) -> float | None:
         """Return the value reported by the number."""
 
-        if self.display_as_fixed:
+        if self.obj.is_fixed:
             return Decimal(self.obj.value) / 1000
         else:
             return self.obj.value
@@ -80,13 +80,9 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
 
-        if self.display_as_fixed:
+        if self.obj.is_fixed:
             value = int(value * 1000)
         else:
             value = int(value)
 
         await self.client.gmem.set_value(self.obj.id, value)
-
-    @property
-    def display_as_fixed(self):
-        return self.obj.tag in ("DegC", "Level", "DeviceUnits", "Seconds")
