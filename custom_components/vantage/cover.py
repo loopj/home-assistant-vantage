@@ -1,6 +1,6 @@
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Blind, BlindGroup
-from homeassistant.components.cover import CoverEntity, CoverDeviceClass
+from homeassistant.components.cover import CoverDeviceClass, CoverEntity
 from homeassistant.components.group.cover import CoverGroup
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform

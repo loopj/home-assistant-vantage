@@ -1,8 +1,9 @@
 from datetime import date, datetime
 from decimal import Decimal
+
 from aiovantage import Vantage
 from aiovantage.config_client.objects import OmniSensor
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfElectricCurrent, UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -33,7 +34,6 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
     def __init__(self, client: Vantage, obj: OmniSensor):
         """Initialize a Vantage omnisensor."""
         super().__init__(client, client.omni_sensors, obj)
-
 
         # Set the device class and unit of measurement based on the sensor type
         if obj.is_current_sensor:

@@ -1,9 +1,8 @@
-from decimal import Decimal
 from aiovantage import Vantage
 from aiovantage.config_client.objects import GMem
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfTemperature, UnitOfTime, PERCENTAGE
+from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
@@ -73,7 +72,7 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
         """Return the value reported by the number."""
 
         if self.obj.is_fixed:
-            return Decimal(self.obj.value) / 1000
+            return self.obj.value / 1000
         else:
             return self.obj.value
 
