@@ -44,16 +44,16 @@ AUTH_SCHEMA = vol.Schema(
 )
 
 
-async def validate_host(host: str) -> None:
-    # Attempt to connect to the host
+async def _validate_host(host: str) -> None:
+    # Attempt to connect to a Vantage host
     try:
         async with CommandClient(host) as client:
             await client.command("ECHO")
-    except Exception:
-        raise CannotConnect
+    except Exception as err:
+        raise CannotConnect from err
 
 
-async def auth_required(host: str) -> bool:
+async def _auth_required(host: str) -> bool:
     # Connect to the host without a username/password
     async with CommandClient(host) as client:
         try:
@@ -64,13 +64,13 @@ async def auth_required(host: str) -> bool:
     return False
 
 
-async def validate_credentials(host: str, username: str, password: str) -> None:
+async def _validate_credentials(host: str, username: str, password: str) -> None:
     # Attempt to connect to the host with the username/password
     async with CommandClient(host) as client:
         try:
             await client.command("LOGIN", username, password)
-        except LoginFailedError:
-            raise InvalidAuth
+        except LoginFailedError as err:
+            raise InvalidAuth from err
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -78,9 +78,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize the Vantage config flow."""
+        self.data: dict[str, Any] = {}
+
     async def async_step_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
+        """Confirm we want to add this controller to Home Assistant."""
+
         if user_input is not None:
             return self.async_create_entry(title="Vantage InFusion", data=self.data)
 
@@ -89,17 +95,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_auth(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Invoked after a host is discovered or entered by the user."""
+        """Handle authenticating with the Vantage controller.
+
+        If this controller requires authentication, show a form asking for credentials.
+        Otherwise, move on to the confirmation step.
+        """
 
         if user_input is None:
             # Check if we can connect without auth before asking for credentials
-            if not await auth_required(self.data["host"]):
+            if not await _auth_required(self.data["host"]):
                 return await self.async_step_confirm()
 
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                await validate_credentials(
+                await _validate_credentials(
                     self.data["host"],
                     user_input[CONF_USERNAME],
                     user_input[CONF_PASSWORD],
@@ -124,21 +134,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Invoked when a user initiates a flow via the user interface."""
-
-        # TODO: Allow user to specify ports / if we should use SSL
+        """Handle a flow initialized by the user."""
 
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                await validate_host(user_input[CONF_HOST])
+                await _validate_host(user_input[CONF_HOST])
             except CannotConnect:
                 errors["base"] = "cannot_connect"
 
             if not errors:
-                self.data = {
-                    "host": user_input[CONF_HOST],
-                }
+                self.data.update(
+                    {
+                        "host": user_input[CONF_HOST],
+                    }
+                )
 
                 return await self.async_step_auth()
 
@@ -149,7 +159,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_zeroconf(
         self, discovery_info: zeroconf.ZeroconfServiceInfo
     ) -> FlowResult:
-        """Invoked when a vantage device is discovered via zeroconf."""
+        """Handle a discovered Hue bridge.
+
+        This flow is triggered by the Zeroconf component. It will check if the
+        host is already configured and delegate to the auth step if not.
+        """
 
         # Abort if we have already configured this controller
         await self.async_set_unique_id(discovery_info.hostname)

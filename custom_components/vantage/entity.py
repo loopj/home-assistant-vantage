@@ -1,3 +1,5 @@
+"""Support for generic Vantage entities."""
+
 from typing import Any, Generic, TypeVar
 
 from aiovantage import Vantage, VantageEvent
@@ -10,10 +12,12 @@ from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
 
-T = TypeVar("T", bound="SystemObject")
+T = TypeVar("T", bound=SystemObject)
 
 
 class VantageEntity(Generic[T], Entity):
+    """Base class for Vantage entities."""
+
     # The Vantage client
     client: "Vantage"
 
@@ -69,9 +73,9 @@ class VantageEntity(Generic[T], Entity):
         )
 
     @callback
-    def _handle_event(self, event: Event, obj: T, data: dict[str, Any]) -> None:
+    def _handle_event(self, _event: Event, _obj: T, _data: dict[str, Any]) -> None:
         # Handle callback from Vantage for this object.
 
         # Object state is kept up to date by the Vantage client by an internal
-        # subscription.  We just need to tell HA the state has changed.
+        # subscription.  We just need to tell HA the state has 1changed.
         self.async_write_ha_state()

@@ -1,3 +1,9 @@
+"""Support for Vantage number entities.
+
+The following Vantage objects are considered number entities:
+- "GMem" objects that are numbers
+"""
+
 from aiovantage import Vantage
 from aiovantage.config_client.objects import GMem
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
@@ -12,7 +18,7 @@ from .entity import VantageEntity
 async def async_setup_entry(
     hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
 ):
-    # Get the client from the hass data store
+    """Set up Vantage numbers from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
     # Integer GMem objects are Number entities

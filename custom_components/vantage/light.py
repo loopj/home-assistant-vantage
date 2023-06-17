@@ -1,3 +1,10 @@
+"""Support for Vantage light entities.
+
+The following Vantage objects are considered light entities:
+- "Load" objects that are not relays or motors
+- "RGBLoad" objects
+"""
+
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Load, LoadGroup, RGBLoad
 from homeassistant.components.group.light import LightGroup
@@ -28,7 +35,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Vantage Light from Config Entry."""
+    """Set up Vantage lights from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
     registry = async_get_entity_registry(hass)
 
@@ -49,9 +56,11 @@ async def async_setup_entry(
         # Get the load ids for the group, and look up their HA entity ids
         entity_ids = []
         for load_id in load_group.load_ids:
-            id = registry.async_get_entity_id(Platform.LIGHT, DOMAIN, str(load_id))
-            if id is not None:
-                entity_ids.append(id)
+            entity_id = registry.async_get_entity_id(
+                Platform.LIGHT, DOMAIN, str(load_id)
+            )
+            if entity_id is not None:
+                entity_ids.append(entity_id)
 
         # Create the group entity and add it to HA
         entity = VantageLightGroup(vantage, load_group, entity_ids)
@@ -178,30 +187,26 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
         else:
             level = 100
 
-        # TODO: Consider just checking for ATTR_*_COLOR, and calling the appropriate
-        #       method on the controller. If no color is specified, just call
-        #       load.turn_on()
-
         if self.color_mode == ColorMode.HS:
-            hs = kwargs.get(ATTR_HS_COLOR, self.obj.hsl[:2])
+            hs_color = kwargs.get(ATTR_HS_COLOR, self.obj.hsl[:2])
 
-            await self.client.rgb_loads.set_hsl(self.obj.id, *hs, level)
+            await self.client.rgb_loads.set_hsl(self.obj.id, *hs_color, level)
 
         elif self.color_mode == ColorMode.RGB:
-            rgb = kwargs.get(ATTR_RGB_COLOR)
-            if rgb is None:
+            rgb_color = kwargs.get(ATTR_RGB_COLOR)
+            if rgb_color is None:
                 # Use last known color, converting from HSL since RGB is lossy
-                rgb = hsv_to_rgb(*self.obj.hsl[:2], level)
+                rgb_color = hsv_to_rgb(*self.obj.hsl[:2], level)
 
-            await self.client.rgb_loads.set_rgb(self.obj.id, *rgb)
+            await self.client.rgb_loads.set_rgb(self.obj.id, *rgb_color)
 
         elif self.color_mode == ColorMode.RGBW:
-            rgbw = kwargs.get(ATTR_RGBW_COLOR)
-            if rgbw is None:
+            rgbw_color = kwargs.get(ATTR_RGBW_COLOR)
+            if rgbw_color is None:
                 # Use last known color, converting from HSL since RGBW is lossy
-                rgbw = hsv_to_rgb(*self.obj.hsl[:2], level) + (level / 100 * 255,)
+                rgbw_color = hsv_to_rgb(*self.obj.hsl[:2], level) + (level / 100 * 255,)
 
-            await self.client.rgb_loads.set_rgbw(self.obj.id, *rgbw)
+            await self.client.rgb_loads.set_rgbw(self.obj.id, *rgbw_color)
 
         elif self.color_mode == ColorMode.COLOR_TEMP:
             if ATTR_COLOR_TEMP_KELVIN in kwargs:
