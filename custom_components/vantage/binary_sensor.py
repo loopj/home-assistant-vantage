@@ -1,3 +1,9 @@
+"""Support for Vantage binary sensor entities.
+
+The following Vantage objects are considered binary sensor entities:
+- "DryContact" objects (typically a motion sensor)
+"""
+
 from aiovantage import Vantage
 from aiovantage.config_client.objects import DryContact
 from homeassistant.components.binary_sensor import BinarySensorEntity
@@ -11,7 +17,7 @@ from .entity import VantageEntity
 async def async_setup_entry(
     hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
 ):
-    # Get the client from the hass data store
+    """Set up Vantage binary sensors from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
     # Dry contacts are binary sensors

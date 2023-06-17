@@ -1,3 +1,10 @@
+"""Support for Vantage switch entities.
+
+The following Vantage objects are considered switch entities:
+- "Load" objects that are relays
+- "GMem" objects that are booleans
+"""
+
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Load, GMem
 from homeassistant.components.switch import SwitchEntity
@@ -11,7 +18,7 @@ from .entity import VantageEntity
 async def async_setup_entry(
     hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
 ):
-    # Get the client from the hass data store
+    """Set up Vantage switches from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
     # Relay Load objects are switches

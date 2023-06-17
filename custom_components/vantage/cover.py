@@ -1,3 +1,10 @@
+"""Support for Vantage cover entities.
+
+The following Vantage objects are considered cover entities:
+- "Blind" objects
+- "BlindGroup" objects
+"""
+
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Blind, BlindGroup
 from homeassistant.components.cover import CoverDeviceClass, CoverEntity
@@ -17,7 +24,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Vantage Light from Config Entry."""
+    """Set up Vantage covers from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
     registry = async_get_entity_registry(hass)
 
@@ -30,9 +37,11 @@ async def async_setup_entry(
         # Get the blind ids for the group, and look up their HA entity ids
         entity_ids = []
         async for blind in vantage.blind_groups.blinds(blind_group.id):
-            id = registry.async_get_entity_id(Platform.COVER, DOMAIN, str(blind.id))
-            if id is not None:
-                entity_ids.append(id)
+            entity_id = registry.async_get_entity_id(
+                Platform.COVER, DOMAIN, str(blind.id)
+            )
+            if entity_id is not None:
+                entity_ids.append(entity_id)
 
         # Create the group entity and add it to HA
         entity = VantageCoverGroup(vantage, blind_group, entity_ids)

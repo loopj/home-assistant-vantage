@@ -1,3 +1,9 @@
+"""Support for Vantage sensor entities.
+
+The following Vantage objects are considered sensor entities:
+- "OmniSensor" objects
+"""
+
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -16,7 +22,7 @@ from .entity import VantageEntity
 async def async_setup_entry(
     hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
 ):
-    # Get the client from the hass data store
+    """Set up Vantage sensors from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
     # Expose all omnisensors
