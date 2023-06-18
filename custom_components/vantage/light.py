@@ -187,14 +187,18 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
             level = 100
 
         if self.color_mode == ColorMode.HS:
+            # TODO: Object of type "None" is not subscriptable
             hs_color = kwargs.get(ATTR_HS_COLOR, self.obj.hsl[:2])
 
+            # TODO: Expected 4 positional arguments
             await self.client.rgb_loads.set_hsl(self.obj.id, *hs_color, level)
 
         elif self.color_mode == ColorMode.RGB:
             rgb_color = kwargs.get(ATTR_RGB_COLOR)
             if rgb_color is None:
                 # Use last known color, converting from HSL since RGB is lossy
+                # TODO: Object of type "None" is not subscriptable
+                # TODO: Expected 3 positional arguments
                 rgb_color = hsv_to_rgb(*self.obj.hsl[:2], level)
 
             await self.client.rgb_loads.set_rgb(self.obj.id, *rgb_color)
@@ -203,6 +207,8 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
             rgbw_color = kwargs.get(ATTR_RGBW_COLOR)
             if rgbw_color is None:
                 # Use last known color, converting from HSL since RGBW is lossy
+                # TODO: Object of type "None" is not subscriptable
+                # TODO: Expected 3 positional arguments
                 rgbw_color = hsv_to_rgb(*self.obj.hsl[:2], level) + (level / 100 * 255,)
 
             await self.client.rgb_loads.set_rgbw(self.obj.id, *rgbw_color)

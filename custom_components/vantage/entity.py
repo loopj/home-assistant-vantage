@@ -43,6 +43,9 @@ class VantageEntity(Generic[T], Entity):
     @property
     def device_info(self) -> DeviceInfo | None:
         """Device specific attributes."""
+        # TODO: Argument of type "set[tuple[Literal['vantage'], str | None]]" cannot be assigned to parameter "identifiers" of type "set[tuple[str, str]]" in function "__init__"
+        #   Type "str | None" cannot be assigned to type "str"
+        #     Type "None" cannot be assigned to type "str"
         info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id)},
             entry_type=DeviceEntryType.SERVICE,
@@ -51,6 +54,8 @@ class VantageEntity(Generic[T], Entity):
         )
 
         if self.master:
+            # TODO: Could not assign item in TypedDict
+            #   "int" is incompatible with "str"
             info["via_device"] = (DOMAIN, self.master.serial_number)
 
         return info
