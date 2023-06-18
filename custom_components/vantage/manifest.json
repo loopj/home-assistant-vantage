@@ -5,13 +5,21 @@
     "@loopj"
   ],
   "config_flow": true,
-  "dependencies": ["zeroconf"],
+  "dependencies": [
+    "zeroconf"
+  ],
   "documentation": "https://github.com/loopj/hass-vantage",
+  "integration_type": "hub",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/loopj/hass-vantage/issues",
-  "requirements": ["aiovantage==0.2.0"],
+  "requirements": [
+    "aiovantage==0.2.0"
+  ],
   "version": "0.3.1",
   "zeroconf": [
-    {"type": "_secure_aci._tcp.local.", "name": "*infusion*"}
+    {
+      "type": "_secure_aci._tcp.local.",
+      "name": "*infusion*"
+    }
   ]
 }
