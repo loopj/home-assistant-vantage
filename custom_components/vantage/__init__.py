@@ -43,7 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Add the controller to the device registry
         device_registry.async_get_or_create(
-            identifiers={(DOMAIN, master.serial_number)},
+            identifiers={(DOMAIN, str(master.serial_number))},
             config_entry_id=entry.entry_id,
             manufacturer="Vantage",
             name=master.name,

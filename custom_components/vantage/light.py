@@ -41,15 +41,15 @@ async def async_setup_entry(
 
     # Non-motor, and non-relay Load object are lights
     async for load in vantage.loads.lights:
-        entity = VantageLight(vantage, load)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+        load_entity = VantageLight(vantage, load)
+        await load_entity.fetch_relations()
+        async_add_entities([load_entity])
 
     # All RGBLoad objects are lights
     async for rgb_load in vantage.rgb_loads:
-        entity = VantageRGBLight(vantage, rgb_load)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+        rgb_load_entity = VantageRGBLight(vantage, rgb_load)
+        await rgb_load_entity.fetch_relations()
+        async_add_entities([rgb_load_entity])
 
     # Setup LoadGroups as LightGroups
     async for load_group in vantage.load_groups:
@@ -63,9 +63,9 @@ async def async_setup_entry(
                 entity_ids.append(entity_id)
 
         # Create the group entity and add it to HA
-        entity = VantageLightGroup(vantage, load_group, entity_ids)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+        light_group_entity = VantageLightGroup(vantage, load_group, entity_ids)
+        await light_group_entity.fetch_relations()
+        async_add_entities([light_group_entity])
 
 
 class VantageLight(VantageEntity[Load], LightEntity):
@@ -75,8 +75,7 @@ class VantageLight(VantageEntity[Load], LightEntity):
         """Initialize the light."""
         super().__init__(client, client.loads, obj)
 
-        self._attr_supported_color_modes = set()
-
+        self._attr_supported_color_modes: set[str] = set()
         if self.obj.is_dimmable:
             self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
             self._attr_supported_features |= LightEntityFeature.TRANSITION
@@ -84,7 +83,7 @@ class VantageLight(VantageEntity[Load], LightEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
-        return self.obj.level
+        return self.obj.is_on
 
     @property
     def brightness(self) -> int | None:
@@ -117,7 +116,7 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
         """Initialize the light."""
         super().__init__(client, client.rgb_loads, obj)
 
-        self._attr_supported_color_modes = set()
+        self._attr_supported_color_modes: set[str] = set()
         if obj.color_type == RGBLoad.ColorType.HSL:
             self._attr_supported_color_modes.add(ColorMode.HS)
             self._attr_color_mode = ColorMode.HS
@@ -228,7 +227,7 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightGroup):
     def __init__(self, client: Vantage, obj: LoadGroup, entities: list[str]):
         """Initialize a light group."""
         VantageEntity.__init__(self, client, client.load_groups, obj)
-        LightGroup.__init__(self, obj.id, obj.name, entities, None)
+        LightGroup.__init__(self, str(obj.id), obj.name, entities, None)
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""

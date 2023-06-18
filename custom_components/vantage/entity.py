@@ -6,7 +6,7 @@ from aiovantage import Vantage, VantageEvent
 from aiovantage.config_client.objects import Area, LocationObject, Master, SystemObject
 from aiovantage.controllers.base import BaseController
 from homeassistant.components.group import Entity
-from homeassistant.core import Event, callback
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceEntryType
 from homeassistant.helpers.entity import DeviceInfo
 
@@ -43,13 +43,17 @@ class VantageEntity(Generic[T], Entity):
     @property
     def device_info(self) -> DeviceInfo | None:
         """Device specific attributes."""
-        return DeviceInfo(
+        info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id)},
             entry_type=DeviceEntryType.SERVICE,
             name=self.name,
             suggested_area=self.suggested_area,
-            via_device=(DOMAIN, self.master.serial_number),
         )
+
+        if self.master:
+            info["via_device"] = (DOMAIN, self.master.serial_number)
+
+        return info
 
     @property
     def suggested_area(self) -> str | None:
@@ -73,7 +77,9 @@ class VantageEntity(Generic[T], Entity):
         )
 
     @callback
-    def _handle_event(self, _event: Event, _obj: T, _data: dict[str, Any]) -> None:
+    def _handle_event(
+        self, _event: VantageEvent, _obj: T, _data: dict[str, Any]
+    ) -> None:
         # Handle callback from Vantage for this object.
 
         # Object state is kept up to date by the Vantage client by an internal

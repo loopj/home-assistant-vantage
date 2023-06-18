@@ -29,9 +29,9 @@ async def async_setup_entry(
     registry = async_get_entity_registry(hass)
 
     async for blind in vantage.blinds:
-        entity = VantageCover(vantage, blind)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+        blind_entity = VantageCover(vantage, blind)
+        await blind_entity.fetch_relations()
+        async_add_entities([blind_entity])
 
     async for blind_group in vantage.blind_groups:
         # Get the blind ids for the group, and look up their HA entity ids
@@ -44,9 +44,9 @@ async def async_setup_entry(
                 entity_ids.append(entity_id)
 
         # Create the group entity and add it to HA
-        entity = VantageCoverGroup(vantage, blind_group, entity_ids)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+        blind_group_entity = VantageCoverGroup(vantage, blind_group, entity_ids)
+        await blind_group_entity.fetch_relations()
+        async_add_entities([blind_group_entity])
 
 
 class VantageCover(VantageEntity[Blind], CoverEntity):
@@ -85,7 +85,7 @@ class VantageCoverGroup(VantageEntity[BlindGroup], CoverGroup):
     def __init__(self, client: Vantage, obj: BlindGroup, entities: list[str]):
         """Initialize a cover group."""
         VantageEntity.__init__(self, client, client.blind_groups, obj)
-        CoverGroup.__init__(self, obj.id, obj.name, entities)
+        CoverGroup.__init__(self, str(obj.id), obj.name, entities)
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""

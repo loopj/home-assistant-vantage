@@ -77,10 +77,13 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
     def native_value(self) -> float | None:
         """Return the value reported by the number."""
 
-        if self.obj.is_fixed:
-            return self.obj.value / 1000
+        if isinstance(self.obj.value, int):
+            if self.obj.is_fixed:
+                return self.obj.value / 1000
 
-        return self.obj.value
+            return self.obj.value
+
+        return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""

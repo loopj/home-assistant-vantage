@@ -23,15 +23,15 @@ async def async_setup_entry(
 
     # Relay Load objects are switches
     async for load in vantage.loads.relays:
-        entity = VantageRelay(vantage, load)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+        relay_entity = VantageRelay(vantage, load)
+        await relay_entity.fetch_relations()
+        async_add_entities([relay_entity])
 
     # Boolean GMem objects are switches
     async for gmem in vantage.gmem.filter(lambda gmem: gmem.is_bool):
-        entity = VantageBooleanVariable(vantage, gmem)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+        gmem_entity = VantageBooleanVariable(vantage, gmem)
+        await gmem_entity.fetch_relations()
+        async_add_entities([gmem_entity])
 
 
 class VantageRelay(VantageEntity[Load], SwitchEntity):
@@ -44,7 +44,7 @@ class VantageRelay(VantageEntity[Load], SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
-        return self.obj.level
+        return self.obj.is_on
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the switch on."""
@@ -65,7 +65,10 @@ class VantageBooleanVariable(VantageEntity[GMem], SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
-        return self.obj.value
+        if isinstance(self.obj.value, bool):
+            return self.obj.value
+
+        return None
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the switch on."""

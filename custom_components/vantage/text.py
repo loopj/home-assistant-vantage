@@ -37,7 +37,10 @@ class VantageTextVariable(VantageEntity[GMem], TextEntity):
     @property
     def native_value(self) -> str | None:
         """Return the value reported by the text."""
-        return self.obj.value
+        if isinstance(self.obj.value, str):
+            return self.obj.value
+
+        return None
 
     async def async_set_value(self, value: str) -> None:
         """Change the value."""
