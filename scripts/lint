@@ -4,4 +4,5 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-ruff check . --fix
+ruff custom_components/vantage
+black --check custom_components/vantage
