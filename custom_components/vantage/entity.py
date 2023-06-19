@@ -43,15 +43,15 @@ class VantageEntity(Generic[T], Entity):
     @property
     def device_info(self) -> DeviceInfo | None:
         """Device specific attributes."""
-        info = DeviceInfo(
+        info: DeviceInfo = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id)},
             entry_type=DeviceEntryType.SERVICE,
             name=self.name,
             suggested_area=self.suggested_area,
-        )
+        )  # type: ignore[typeddict-item] # see python/mypy#15195
 
         if self.master:
-            info["via_device"] = (DOMAIN, self.master.serial_number)
+            info["via_device"] = (DOMAIN, str(self.master.serial_number))
 
         return info
 

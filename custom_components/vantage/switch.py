@@ -5,19 +5,23 @@ The following Vantage objects are considered switch entities:
 - "GMem" objects that are booleans
 """
 
+from typing import Any
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Load, GMem
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import VantageEntity
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
-):
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Set up Vantage switches from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
@@ -46,11 +50,11 @@ class VantageRelay(VantageEntity[Load], SwitchEntity):
         """Return True if entity is on."""
         return self.obj.is_on
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
         await self.client.loads.turn_on(self.obj.id)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         await self.client.loads.turn_off(self.obj.id)
 
@@ -70,10 +74,10 @@ class VantageBooleanVariable(VantageEntity[GMem], SwitchEntity):
 
         return None
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
         await self.client.gmem.set_value(self.obj.id, True)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         await self.client.gmem.set_value(self.obj.id, False)

@@ -13,6 +13,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfElectricCurrent, UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from .const import DOMAIN
@@ -20,8 +21,10 @@ from .entity import VantageEntity
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
-):
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Set up Vantage sensors from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
@@ -58,6 +61,6 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
         """Return the value reported by the sensor."""
         return self.obj.level
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Update the state of the sensor."""
         await self.client.omni_sensors.get_level(self.obj.id)

@@ -5,6 +5,7 @@ The following Vantage objects are considered cover entities:
 - "BlindGroup" objects
 """
 
+from typing import Any
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Blind, BlindGroup
 from homeassistant.components.cover import CoverDeviceClass, CoverEntity
@@ -62,19 +63,19 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
         super().__init__(client, client.blinds, obj)
 
     @property
-    def is_closed(self):
+    def is_closed(self) -> bool | None:
         """Return if the cover is closed or not."""
         return None
 
-    async def async_open_cover(self, **kwargs):
+    async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
         await self.client.blinds.open(self.obj.id)
 
-    async def async_close_cover(self, **kwargs):
+    async def async_close_cover(self, **kwargs: Any) -> None:
         """Close cover."""
         await self.client.blinds.close(self.obj.id)
 
-    async def async_stop_cover(self, **kwargs):
+    async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
         await self.client.blinds.stop(self.obj.id)
 

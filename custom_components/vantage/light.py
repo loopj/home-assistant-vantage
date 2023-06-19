@@ -5,6 +5,7 @@ The following Vantage objects are considered light entities:
 - "RGBLoad" objects
 """
 
+from typing import Any
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Load, LoadGroup, RGBLoad
 from homeassistant.components.group.light import LightGroup
@@ -93,7 +94,7 @@ class VantageLight(VantageEntity[Load], LightEntity):
 
         return round((self.obj.level / 100) * 255)
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
         if ATTR_BRIGHTNESS in kwargs:
             level = (kwargs[ATTR_BRIGHTNESS] * 100) / 255
@@ -104,7 +105,7 @@ class VantageLight(VantageEntity[Load], LightEntity):
             self.obj.id, kwargs.get(ATTR_TRANSITION, 0), level
         )
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
         await self.client.loads.turn_off(self.obj.id, kwargs.get(ATTR_TRANSITION, 0))
 
@@ -214,7 +215,7 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
             await self.client.rgb_loads.set_level(self.obj.id, level)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
         await self.client.rgb_loads.turn_off(
             self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
