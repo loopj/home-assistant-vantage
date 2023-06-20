@@ -2,6 +2,9 @@
 homeassistant==2023.6.2
 colorlog==6.7.0
 
+# Custom component
+aiovantage==0.2.1
+
 # Type stubs
 voluptuous-stubs==0.1.1
 homeassistant-stubs==2023.6.2
