@@ -1,6 +1,6 @@
 {
     "name": "loopj/hass-vantage",
-    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11-bullseye",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
         8123
@@ -35,8 +35,5 @@
             }
         }
     },
-    "remoteUser": "vscode",
-    "features": {
-        "ghcr.io/devcontainers/features/rust:1": {}
-    }
+    "remoteUser": "vscode"
 }
