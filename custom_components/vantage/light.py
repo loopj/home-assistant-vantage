@@ -180,7 +180,7 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
         return self.obj.color_temp
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
         if ATTR_BRIGHTNESS in kwargs:
             level = (kwargs[ATTR_BRIGHTNESS] * 100) / 255

@@ -31,7 +31,7 @@ class VantageEntity(Generic[T], Entity):
     area: Area | None = None
     master: Master | None = None
 
-    def __init__(self, client: Vantage, controller: BaseController, obj: T):
+    def __init__(self, client: Vantage, controller: BaseController[T], obj: T):
         """Initialize a generic Vantage entity."""
         self.client = client
         self.controller = controller
