@@ -22,13 +22,13 @@ To set up your development environment, you can either use a venv or a devcontai
 Create a venv in the root of the project:
 
 ```bash
-python3 -m venv .venv
+python3 -m venv venv
 ```
 
 Activate the venv:
 
 ```bash
-source .venv/bin/activate
+source venv/bin/activate
 ```
 
 Install the dependencies:
