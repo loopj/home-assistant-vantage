@@ -45,28 +45,19 @@ Start Home Assistant:
 
 ### Using a Development Container
 
-Alternatively, you can use a [Development Container](https://containers.dev/) to set up your
-development environment.
-
 > **Note**
 > Using a development container is not as fast as a venv, and zeroconf discovery will not work.
 
-To use a development container, you need to have [Docker](https://www.docker.com/) and
-[Visual Studio Code](https://code.visualstudio.com/) installed. You also need to install the
-[Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-extension for Visual Studio Code.
+Alternatively, you can use a [Development Container](https://containers.dev/) to set up your development environment. You'll need [Docker](https://www.docker.com/) and [Visual Studio Code](https://code.visualstudio.com/) installed, as well as the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension for Visual Studio Code.
 
-Open the project in Visual Studio Code, and you should be prompted to reopen the project in a
-container. If you are not prompted, you can open the command palette and select
-*Dev Containers: Reopen in Container*.
+Open the project in Visual Studio Code, and you should be prompted to reopen the project in a container. If you are not prompted, you can open the command palette and select *Dev Containers: Reopen in Container*.
 
-Once the container is running, you can start Home Assistant by either running `./scripts/start`
-in the terminal, or by opening the command palette and selecting *Tasks: Run Task* and then
-*Run Home Assistant*.
+Once the container is running, you can start Home Assistant by either running `./scripts/start` in the terminal, or by opening the command palette and selecting *Tasks: Run Task* and then *Run Home Assistant*.
 
 ## ✨ Submit your work
 
 Submit your improvements, fixes, and new features to one at a time, using GitHub [Pull Requests](https://docs.github.com/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
+
 Good pull requests remain focused in scope and avoid containing unrelated commits. If your contribution involves a significant amount of work or substantial changes to any part of the project, please open an issue to discuss it first to avoid any wasted or duplicate effort.
 
 ## 🎨 Style guidelines
