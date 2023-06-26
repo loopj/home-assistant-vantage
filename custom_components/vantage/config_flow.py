@@ -5,8 +5,9 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-from aiovantage.command_client import (
-    CommandClient,
+from aiovantage.command_client import CommandClient
+from aiovantage.errors import (
+    ClientConnectionError,
     LoginFailedError,
     LoginRequiredError,
 )
@@ -49,8 +50,10 @@ async def _validate_host(host: str) -> None:
     try:
         async with CommandClient(host) as client:
             await client.command("ECHO")
-    except Exception as err:
+    except ClientConnectionError as err:
         raise CannotConnect from err
+    except LoginRequiredError:
+        pass
 
 
 async def _auth_required(host: str) -> bool:
