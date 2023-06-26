@@ -2,18 +2,18 @@
 
 First off, thanks for taking the time to contribute!
 
+## Table of Contents
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-## Table of Contents
 
-- [🛠️ Set up Development Environment](#-set-up-development-environment)
+- [🔨 Set up Development Environment](#-set-up-development-environment)
 - [✨ Submit your work](#-submit-your-work)
 - [🎨 Style guidelines](#-style-guidelines)
 - [🚀 Publish a release](#-publish-a-release)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## 🛠️ Set up Development Environment
+## 🔨 Set up Development Environment
 
 To set up your development environment, you can either use a venv or a devcontainer.
 
@@ -40,7 +40,7 @@ Install the dependencies:
 Start Home Assistant:
 
 ```bash
-./scripts/start
+./scripts/develop
 ```
 
 ### Using a Development Container
