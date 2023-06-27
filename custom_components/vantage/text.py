@@ -30,7 +30,7 @@ async def async_setup_entry(
         async_add_entities([entity])
 
 
-class VantageTextVariable(VantageEntity[GMem], TextEntity):
+class VantageTextVariable(VantageEntity[GMem], TextEntity):  # type: ignore[misc]
     """Representation of a Vantage text GMem variable."""
 
     def __init__(self, client: Vantage, obj: GMem):

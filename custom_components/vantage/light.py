@@ -187,12 +187,13 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
         else:
             level = 100
 
-        if self.color_mode == ColorMode.HS:
-            hs_color = kwargs.get(ATTR_HS_COLOR, self.obj.hsl[:2])
+        if self.color_mode == ColorMode.HS and self.obj.hsl is not None:
+            hs_color: tuple[float, float] = kwargs.get(ATTR_HS_COLOR, self.obj.hsl[:2])
+            await self.client.rgb_loads.set_hsl(
+                self.obj.id, int(hs_color[0]), int(hs_color[1]), level
+            )
 
-            await self.client.rgb_loads.set_hsl(self.obj.id, *hs_color, level)
-
-        elif self.color_mode == ColorMode.RGB:
+        elif self.color_mode == ColorMode.RGB and self.obj.hsl is not None:
             rgb_color = kwargs.get(ATTR_RGB_COLOR)
             if rgb_color is None:
                 # Use last known color, converting from HSL since RGB is lossy
@@ -200,7 +201,7 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
             await self.client.rgb_loads.set_rgb(self.obj.id, *rgb_color)
 
-        elif self.color_mode == ColorMode.RGBW:
+        elif self.color_mode == ColorMode.RGBW and self.obj.hsl is not None:
             rgbw_color = kwargs.get(ATTR_RGBW_COLOR)
             if rgbw_color is None:
                 # Use last known color, converting from HSL since RGBW is lossy
