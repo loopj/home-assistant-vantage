@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-set -e
-
-cd "$(dirname "$0")/.."
-
-mypy custom_components/vantage
-ruff custom_components/vantage
-black --check custom_components/vantage
