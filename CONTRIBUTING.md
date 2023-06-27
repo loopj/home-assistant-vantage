@@ -62,17 +62,21 @@ Good pull requests remain focused in scope and avoid containing unrelated commit
 
 ## 🎨 Style guidelines
 
-We use `mypy`, `ruff`, and `black` for code linting and formatting. Linting helps ensure code quality and consistency throughout the project.
+This project uses [pre-commit](https://pre-commit.com/) to run code linting and formatting checks before commits are made. `pre-commit` and its associated hooks will automatically be installed when you run `./scripts/setup`.
 
-To run linting locally, execute the following command:
+To install `pre-commit` hook manually, run the following:
 
 ```bash
-./scripts/lint
+pre-commit install
 ```
 
-This command will run the linting tools, checking for against the project linting rules.
+You can invoke the pre-commit hook by hand at any time with:
 
-While you're free to use your preferred linters or editor plugins, please ensure that your changes adhere to our linting rules and pass the CI checks.
+```bash
+pre-commit run
+```
+
+If you have already committed files before setting up the pre-commit hook with `pre-commit install`, you can fix everything up using `pre-commit run --all-files`. You need to make the fixing commit yourself after that.
 
 ## 🚀 Publish a release
 
