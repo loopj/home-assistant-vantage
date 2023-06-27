@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-set -e
-
-cd "$(dirname "$0")/.."
-
-pip install -q -r requirements.txt
-
-mypy custom_components/vantage
