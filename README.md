@@ -15,7 +15,11 @@ The features of this integration include:
 
 ## Prerequisites
 
-If your Vantage controller has authentication enabled (most do by default) you'll need to know the username and password to continue. If you don't have your username and password, it is easy to reset them if you have physical access to the controller, do a google search for "vantage infusion reset password". Alternatively, if you are working with a Vantage dealer, they can provide these credentials.
+If your Vantage controller requires authentication (most do by default) you'll need to know a username and password to continue.
+
+If you don't know your username and password, you can reset the password for the *administrator* user if you have physical access to the controller. When resetting your password, it will revert to the serial number of your controller. Alternatively, if you are working with a Vantage dealer, they can provide these credentials.
+
+If you aren't using the default *administrator* user, ensure that the following permissions are enabled for your user: *Read State*, *Write State*, *Read Config*.
 
 ## Installation
 
