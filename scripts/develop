@@ -16,5 +16,5 @@ fi
 ## without resulting to symlinks.
 export PYTHONPATH="${PYTHONPATH}:${PWD}/custom_components"
 
-# Start Home Assistant
-hass --config "${PWD}/config" --debug
+# Start Home Assistant, using the aiovantage installed in the venv
+hass --config "${PWD}/config" --debug --skip-pip-packages aiovantage

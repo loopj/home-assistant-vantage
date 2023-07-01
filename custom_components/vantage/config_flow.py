@@ -1,79 +1,29 @@
 """Config flow for Vantage InFusion Controller integration."""
 from __future__ import annotations
 
-import logging
+import re
 from typing import Any
 
 import voluptuous as vol
-from aiovantage.command_client import CommandClient
-from aiovantage.errors import (
-    ClientConnectionError,
-    LoginFailedError,
-    LoginRequiredError,
+from aiovantage.discovery import (
+    DiscoveredVantageController,
+    discover_controller,
+    valid_credentials,
 )
+from aiovantage.errors import ClientConnectionError
 from homeassistant import config_entries
 from homeassistant.components import zeroconf
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_SSL, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
 
-_LOGGER = logging.getLogger(__name__)
-
-
-class CannotConnect(HomeAssistantError):
-    """Error to indicate we cannot connect."""
-
-
-class InvalidAuth(HomeAssistantError):
-    """Error to indicate there is invalid auth."""
-
-
-HOST_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_HOST): cv.string,
-    }
-)
-
 AUTH_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
+        vol.Required(CONF_USERNAME): str,
+        vol.Required(CONF_PASSWORD): str,
     }
 )
-
-
-async def _validate_host(host: str) -> None:
-    # Attempt to connect to a Vantage host
-    try:
-        async with CommandClient(host) as client:
-            await client.command("ECHO")
-    except ClientConnectionError as err:
-        raise CannotConnect from err
-    except LoginRequiredError:
-        pass
-
-
-async def _auth_required(host: str) -> bool:
-    # Connect to the host without a username/password
-    async with CommandClient(host) as client:
-        try:
-            await client.command("ECHO")
-        except LoginRequiredError:
-            return True
-
-    return False
-
-
-async def _validate_credentials(host: str, username: str, password: str) -> None:
-    # Attempt to connect to the host with the username/password
-    async with CommandClient(host) as client:
-        try:
-            await client.command("LOGIN", username, password)
-        except LoginFailedError as err:
-            raise InvalidAuth from err
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -83,99 +33,189 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the Vantage config flow."""
-        self.data: dict[str, Any] = {}
+        self.controller: DiscoveredVantageController | None = None
+        self.username: str | None = None
+        self.password: str | None = None
 
-    async def async_step_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Confirm we want to add this controller to Home Assistant."""
-
-        if user_input is not None:
-            return self.async_create_entry(title="Vantage InFusion", data=self.data)
-
-        return self.async_show_form(step_id="confirm")
+    async def async_finish(self) -> FlowResult:
+        """Create the config entry with the gathered information."""
+        assert self.controller is not None
+        return self.async_create_entry(
+            title="Vantage InFusion",
+            data={
+                CONF_HOST: self.controller.host,
+                CONF_SSL: self.controller.supports_ssl,
+                CONF_USERNAME: self.username,
+                CONF_PASSWORD: self.password,
+            },
+        )
 
     async def async_step_auth(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle authenticating with the Vantage controller.
-
-        If this controller requires authentication, show a form asking for credentials.
-        Otherwise, move on to the confirmation step.
-        """
-
-        if user_input is None:
-            # Check if we can connect without auth before asking for credentials
-            if not await _auth_required(self.data["host"]):
-                return await self.async_step_confirm()
-
-        errors: dict[str, str] = {}
+        """Handle collecting authentication information."""
+        errors: dict[str, str] | None = None
         if user_input is not None:
-            try:
-                await _validate_credentials(
-                    self.data["host"],
-                    user_input[CONF_USERNAME],
-                    user_input[CONF_PASSWORD],
-                )
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
+            assert self.controller is not None
 
+            # Validate the credentials
+            errors = await self._async_validate_credentials(
+                self.controller.host,
+                user_input[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+                self.controller.supports_ssl,
+            )
+
+            # If valid, store the credentials and move on
             if not errors:
-                self.data.update(
-                    {
-                        "username": user_input[CONF_USERNAME],
-                        "password": user_input[CONF_PASSWORD],
-                    }
-                )
+                self.username = user_input[CONF_USERNAME]
+                self.password = user_input[CONF_PASSWORD]
 
-                return await self.async_step_confirm()
+                return await self.async_finish()
 
+        # Show the auth input form
         return self.async_show_form(
-            step_id="auth", data_schema=AUTH_SCHEMA, errors=errors
+            step_id="auth",
+            data_schema=AUTH_SCHEMA,
+            errors=errors,
         )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle a flow initialized by the user."""
-
         errors: dict[str, str] = {}
         if user_input is not None:
+            # Abort if this controller is already configured
+            self._async_abort_entries_match({CONF_HOST: user_input[CONF_HOST]})
+
+            # Get information about the controller
             try:
-                await _validate_host(user_input[CONF_HOST])
-            except CannotConnect:
+                self.controller = await discover_controller(user_input[CONF_HOST])
+            except ClientConnectionError:
                 errors["base"] = "cannot_connect"
 
-            if not errors:
-                self.data.update(
-                    {
-                        "host": user_input[CONF_HOST],
-                    }
-                )
+            # Show either the auth form or finish the config flow
+            if self.controller:
+                if self.controller.requires_auth:
+                    return await self.async_step_auth()
+                return await self.async_finish()
 
-                return await self.async_step_auth()
-
+        # Show the host input form
         return self.async_show_form(
-            step_id="user", data_schema=HOST_SCHEMA, errors=errors
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST): str,
+                }
+            ),
+            errors=errors,
         )
 
     async def async_step_zeroconf(
         self, discovery_info: zeroconf.ZeroconfServiceInfo
     ) -> FlowResult:
-        """Handle a discovered Hue bridge.
+        """Handle a discovered Vantage controller."""
+        serial_number = self._serial_number_from_hostname(discovery_info.hostname)
+        if serial_number is None:
+            return self.async_abort(reason="invalid_host")
 
-        This flow is triggered by the Zeroconf component. It will check if the
-        host is already configured and delegate to the auth step if not.
-        """
+        # Abort if this controller is already configured, update the host if it changed
+        await self.async_set_unique_id(serial_number)
+        self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.host})
 
-        # Abort if we have already configured this controller
-        await self.async_set_unique_id(discovery_info.hostname)
-        self._abort_if_unique_id_configured()
+        # Get information about the controller
+        try:
+            self.controller = await discover_controller(discovery_info.host)
+        except ClientConnectionError:
+            return self.async_abort(reason="cannot_connect")
 
-        # Pass the host to the next step
-        self.data = {
-            "host": discovery_info.host,
-            "zeroconf": True,
-        }
+        # Show either the auth form or the confirmation form
+        if self.controller.requires_auth:
+            return await self.async_step_auth()
+        return await self.async_step_zeroconf_confirm()
 
-        return await self.async_step_auth()
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle a user confirming the discovered Vantage controller."""
+        if user_input is not None:
+            return await self.async_finish()
+
+        # Show the confirmation form
+        assert self.controller is not None
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            description_placeholders={
+                "host": self.controller.host,
+            },
+        )
+
+    async def async_step_reauth(
+        self, _entry_data: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle reauthentication."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle a flow initiated by reauthentication."""
+        errors: dict[str, str] | None = None
+        if user_input is not None:
+            # Get the config entry
+            reauth_entry = self.hass.config_entries.async_get_entry(
+                self.context["entry_id"]
+            )
+            assert reauth_entry is not None
+
+            # Validate the credentials
+            errors = await self._async_validate_credentials(
+                reauth_entry.data[CONF_HOST],
+                user_input[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+                reauth_entry.data[CONF_SSL],
+            )
+
+            if not errors:
+                # Update the config entry with the new credentials
+                self.hass.config_entries.async_update_entry(
+                    reauth_entry,
+                    data={
+                        **reauth_entry.data,
+                        CONF_USERNAME: user_input[CONF_USERNAME],
+                        CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    },
+                )
+
+                # Reload the integration and finish the config flow
+                await self.hass.config_entries.async_reload(reauth_entry.entry_id)
+                return self.async_abort(reason="reauth_successful")
+
+        # Show the re-authentication form
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=AUTH_SCHEMA,
+            errors=errors,
+        )
+
+    @staticmethod
+    async def _async_validate_credentials(
+        host: str, username: str, password: str, ssl: bool
+    ) -> dict[str, str] | None:
+        """Validate the credentials for a Vantage controller."""
+        try:
+            if not await valid_credentials(host, username, password, ssl):
+                return {"base": "invalid_auth"}
+        except ClientConnectionError:
+            return {"base": "cannot_connect"}
+
+        return None
+
+    @staticmethod
+    def _serial_number_from_hostname(hostname: str) -> str | None:
+        """Get the serial number from a Vantage hostname."""
+        match = re.match(r"ic-ii-(?P<serial_number>\d+)", hostname)
+        if not match:
+            return None
+        return match.group("serial_number")

@@ -1,8 +1,15 @@
 {
   "config": {
+    "abort": {
+      "unknown": "Unexpected error",
+      "cannot_connect": "Failed to connect",
+      "already_configured": "Device is already configured",
+      "invalid_host": "Invalid hostname or IP address",
+      "reauth_successful": "Re-authentication was successful"
+    },
     "error": {
-      "cannot_connect": "Unable to connect to the controller.",
-      "invalid_auth": "Unable to connect using the provided username and password."
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication"
     },
     "step": {
       "auth": {
@@ -10,20 +17,27 @@
           "username": "Username",
           "password": "Password"
         },
-        "description": "This Vantage InFusion controller requires authentication. Please enter your Vantage username and password.",
-        "title": "Configure authentication"
+        "description": "Please enter your Vantage username and password",
+        "title": "Authentication required"
+      },
+      "reauth_confirm": {
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        },
+        "description": "Please update your Vantage username and password",
+        "title": "Authentication failed"
       },
       "user": {
         "data": {
-          "host": "Hostname of controller",
-          "ssl": "Should we use SSL"
+          "host": "Host"
         },
-        "description": "Please enter connection settings for your Vantage InFusion controller.",
+        "description": "Please enter the IP address or hostname of your Vantage InFusion controller",
         "title": "Configure host"
       },
-      "confirm": {
-        "description": "Do you want to add the Vantage InFusion controller to Home Assistant?",
-        "title": "Discovered Vantage InFusion controller"
+      "zeroconf_confirm": {
+        "description": "Discovered a Vantage controller at {host}, would you like to add it to Home Assistant?",
+        "title": "Discovered Vantage controller"
       }
     }
   }
