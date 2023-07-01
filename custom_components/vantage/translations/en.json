@@ -25,8 +25,8 @@
           "username": "Username",
           "password": "Password"
         },
-        "description": "Please update your Vantage username and password",
-        "title": "Authentication failed"
+        "description": "The Vantage integration needs to re-authenticate your account",
+        "title": "Reauthenticate Integration"
       },
       "user": {
         "data": {

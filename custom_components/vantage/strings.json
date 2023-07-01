@@ -25,8 +25,8 @@
           "username": "[%key:common::config_flow::data::username%]",
           "password": "[%key:common::config_flow::data::password%]"
         },
-        "description": "Please update your Vantage username and password",
-        "title": "Authentication failed"
+        "description": "The Vantage integration needs to re-authenticate your account",
+        "title": "[%key:common::config_flow::title::reauth%]"
       },
       "user": {
         "data": {

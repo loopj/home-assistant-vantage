@@ -13,6 +13,7 @@ from aiovantage.discovery import (
 from aiovantage.errors import ClientConnectionError
 from homeassistant import config_entries
 from homeassistant.components import zeroconf
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_SSL, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResult
 
@@ -27,15 +28,14 @@ AUTH_SCHEMA = vol.Schema(
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Vantage InFusion Controller."""
+    """Config flow for Vantage InFusion Controller."""
 
     VERSION = 1
 
-    def __init__(self) -> None:
-        """Initialize the Vantage config flow."""
-        self.controller: DiscoveredVantageController | None = None
-        self.username: str | None = None
-        self.password: str | None = None
+    controller: DiscoveredVantageController | None = None
+    username: str | None = None
+    password: str | None = None
+    reauth_entry: ConfigEntry | None = None
 
     async def async_finish(self) -> FlowResult:
         """Create the config entry with the gathered information."""
@@ -59,7 +59,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             assert self.controller is not None
 
             # Validate the credentials
-            errors = await self._async_validate_credentials(
+            errors = await self._validate_credentials(
                 self.controller.host,
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
@@ -154,42 +154,42 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reauth(
         self, _entry_data: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle reauthentication."""
+        """Perform reauth after controller authentication error."""
+        self.reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle a flow initiated by reauthentication."""
+        """Dialog that informs the user that reauth is required."""
         errors: dict[str, str] | None = None
         if user_input is not None:
             # Get the config entry
-            reauth_entry = self.hass.config_entries.async_get_entry(
-                self.context["entry_id"]
-            )
-            assert reauth_entry is not None
+            assert self.reauth_entry is not None
 
             # Validate the credentials
-            errors = await self._async_validate_credentials(
-                reauth_entry.data[CONF_HOST],
+            errors = await self._validate_credentials(
+                self.reauth_entry.data[CONF_HOST],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
-                reauth_entry.data[CONF_SSL],
+                self.reauth_entry.data[CONF_SSL],
             )
 
             if not errors:
                 # Update the config entry with the new credentials
                 self.hass.config_entries.async_update_entry(
-                    reauth_entry,
+                    self.reauth_entry,
                     data={
-                        **reauth_entry.data,
+                        **self.reauth_entry.data,
                         CONF_USERNAME: user_input[CONF_USERNAME],
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
                     },
                 )
 
                 # Reload the integration and finish the config flow
-                await self.hass.config_entries.async_reload(reauth_entry.entry_id)
+                await self.hass.config_entries.async_reload(self.reauth_entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
 
         # Show the re-authentication form
@@ -200,7 +200,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
-    async def _async_validate_credentials(
+    async def _validate_credentials(
         host: str, username: str, password: str, ssl: bool
     ) -> dict[str, str] | None:
         """Validate the credentials for a Vantage controller."""
