@@ -17,7 +17,7 @@
           "username": "Username",
           "password": "Password"
         },
-        "description": "Please enter your Vantage username and password",
+        "description": "Please enter the username and password for the Vantage controller at {host}",
         "title": "Authentication required"
       },
       "reauth_confirm": {
@@ -25,7 +25,7 @@
           "username": "Username",
           "password": "Password"
         },
-        "description": "The Vantage integration needs to re-authenticate your account",
+        "description": "The Vantage integration at {host} needs to re-authenticate your account",
         "title": "Reauthenticate Integration"
       },
       "user": {

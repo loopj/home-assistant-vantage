@@ -19,6 +19,12 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .const import DOMAIN
 
+HOST_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_HOST): str,
+    }
+)
+
 AUTH_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): str,
@@ -37,53 +43,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     password: str | None = None
     reauth_entry: ConfigEntry | None = None
 
-    async def async_finish(self) -> FlowResult:
-        """Create the config entry with the gathered information."""
-        assert self.controller is not None
-        return self.async_create_entry(
-            title="Vantage InFusion",
-            data={
-                CONF_HOST: self.controller.host,
-                CONF_SSL: self.controller.supports_ssl,
-                CONF_USERNAME: self.username,
-                CONF_PASSWORD: self.password,
-            },
-        )
-
-    async def async_step_auth(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Handle collecting authentication information."""
-        errors: dict[str, str] | None = None
-        if user_input is not None:
-            assert self.controller is not None
-
-            # Validate the credentials
-            errors = await self._validate_credentials(
-                self.controller.host,
-                user_input[CONF_USERNAME],
-                user_input[CONF_PASSWORD],
-                self.controller.supports_ssl,
-            )
-
-            # If valid, store the credentials and move on
-            if not errors:
-                self.username = user_input[CONF_USERNAME]
-                self.password = user_input[CONF_PASSWORD]
-
-                return await self.async_finish()
-
-        # Show the auth input form
-        return self.async_show_form(
-            step_id="auth",
-            data_schema=AUTH_SCHEMA,
-            errors=errors,
-        )
-
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle a flow initialized by the user."""
+        """Handle a flow initiated by the user."""
         errors: dict[str, str] = {}
         if user_input is not None:
             # Abort if this controller is already configured
@@ -104,21 +67,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Show the host input form
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_HOST): str,
-                }
-            ),
+            data_schema=HOST_SCHEMA,
             errors=errors,
         )
 
     async def async_step_zeroconf(
         self, discovery_info: zeroconf.ZeroconfServiceInfo
     ) -> FlowResult:
-        """Handle a discovered Vantage controller."""
+        """Handle a flow initiated by zeroconf discovery."""
         serial_number = self._serial_number_from_hostname(discovery_info.hostname)
         if serial_number is None:
-            return self.async_abort(reason="invalid_host")
+            return self.async_abort(reason="unknown")
 
         # Abort if this controller is already configured, update the host if it changed
         await self.async_set_unique_id(serial_number)
@@ -139,15 +98,68 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle a user confirming the discovered Vantage controller."""
+        assert self.controller is not None
+
         if user_input is not None:
             return await self.async_finish()
 
         # Show the confirmation form
-        assert self.controller is not None
         return self.async_show_form(
             step_id="zeroconf_confirm",
             description_placeholders={
                 "host": self.controller.host,
+            },
+        )
+
+    async def async_step_auth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle collecting authentication information."""
+        assert self.controller is not None
+
+        errors: dict[str, str] | None = None
+        suggestions: dict[str, str] = {CONF_USERNAME: "administrator"}
+
+        if user_input is not None:
+            # Validate the credentials
+            errors = await self._validate_credentials(
+                self.controller.host,
+                user_input[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+                self.controller.supports_ssl,
+            )
+
+            # If valid, store the credentials and move on
+            if not errors:
+                self.username = user_input[CONF_USERNAME]
+                self.password = user_input[CONF_PASSWORD]
+
+                return await self.async_finish()
+
+            # Pre-fill the username field with the previous input
+            suggestions[CONF_USERNAME] = user_input[CONF_USERNAME]
+
+        # Show the auth input form
+        return self.async_show_form(
+            step_id="auth",
+            data_schema=self.add_suggested_values_to_schema(AUTH_SCHEMA, suggestions),
+            errors=errors,
+            description_placeholders={
+                "host": self.controller.host,
+            },
+        )
+
+    async def async_finish(self) -> FlowResult:
+        """Create the config entry with the gathered information."""
+        assert self.controller is not None
+
+        return self.async_create_entry(
+            title="Vantage InFusion",
+            data={
+                CONF_HOST: self.controller.host,
+                CONF_SSL: self.controller.supports_ssl,
+                CONF_USERNAME: self.username,
+                CONF_PASSWORD: self.password,
             },
         )
 
@@ -164,17 +176,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Dialog that informs the user that reauth is required."""
-        errors: dict[str, str] | None = None
-        if user_input is not None:
-            # Get the config entry
-            assert self.reauth_entry is not None
+        assert self.reauth_entry is not None
 
+        errors: dict[str, str] | None = None
+        suggestions: dict[str, str] = {
+            CONF_USERNAME: self.reauth_entry.data[CONF_USERNAME]
+        }
+
+        if user_input is not None:
             # Validate the credentials
             errors = await self._validate_credentials(
                 self.reauth_entry.data[CONF_HOST],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
-                self.reauth_entry.data[CONF_SSL],
+                self.reauth_entry.data.get(CONF_SSL, True),
             )
 
             if not errors:
@@ -192,18 +207,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.hass.config_entries.async_reload(self.reauth_entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
 
+            # Pre-fill the username field with the previous input
+            suggestions[CONF_USERNAME] = user_input[CONF_USERNAME]
+
         # Show the re-authentication form
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=AUTH_SCHEMA,
+            data_schema=self.add_suggested_values_to_schema(AUTH_SCHEMA, suggestions),
             errors=errors,
+            description_placeholders={
+                "host": self.reauth_entry.data[CONF_HOST],
+            },
         )
 
     @staticmethod
     async def _validate_credentials(
         host: str, username: str, password: str, ssl: bool
     ) -> dict[str, str] | None:
-        """Validate the credentials for a Vantage controller."""
+        """Validate the credentials for a Vantage controller, returning errors if invalid."""
         try:
             if not await valid_credentials(host, username, password, ssl):
                 return {"base": "invalid_auth"}
