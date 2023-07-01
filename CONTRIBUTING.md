@@ -84,13 +84,13 @@ Update the version number in `custom_components/vantage/manifest.json`, and comm
 
 ```bash
 git add custom_components/vantage/manifest.json
-git commit -m "Preparing release v1.2.3"
+git commit -m "Preparing release 1.2.3"
 ```
 
 Tag the release, eg:
 
 ```bash
-git tag v1.2.3
+git tag 1.2.3
 git push && git push --tags
 ```
 
