@@ -1,29 +1,43 @@
 {
   "config": {
+    "abort": {
+      "unknown": "[%key:common::config_flow::error::unknown%]",
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "invalid_host": "[%key:common::config_flow::error::invalid_host%]",
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
+    },
     "error": {
-      "cannot_connect": "Unable to connect to the controller.",
-      "invalid_auth": "Unable to connect using the provided username and password."
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
     },
     "step": {
       "auth": {
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
         },
-        "description": "This Vantage InFusion controller requires authentication. Please enter your Vantage username and password.",
-        "title": "Configure authentication"
+        "description": "Please enter your Vantage username and password",
+        "title": "Authentication required"
+      },
+      "reauth_confirm": {
+        "data": {
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
+        },
+        "description": "The Vantage integration needs to re-authenticate your account",
+        "title": "[%key:common::config_flow::title::reauth%]"
       },
       "user": {
         "data": {
-          "host": "Hostname of controller",
-          "ssl": "Should we use SSL"
+          "host": "[%key:common::config_flow::data::host%]"
         },
-        "description": "Please enter connection settings for your Vantage InFusion controller.",
+        "description": "Please enter the IP address or hostname of your Vantage InFusion controller",
         "title": "Configure host"
       },
-      "confirm": {
-        "description": "Do you want to add the Vantage InFusion controller to Home Assistant?",
-        "title": "Discovered Vantage InFusion controller"
+      "zeroconf_confirm": {
+        "description": "Discovered a Vantage controller at {host}, would you like to add it to Home Assistant?",
+        "title": "Discovered Vantage controller"
       }
     }
   }

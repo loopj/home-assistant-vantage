@@ -2,8 +2,11 @@
 homeassistant==2023.6.3
 colorlog==6.7.0
 
-# Custom component
-aiovantage==0.4.0
+# Use a specific version of aiovantage
+aiovantage==0.5.0
+
+# Use a local version of aiovantage
+# -e ../aiovantage
 
 # Type stubs
 voluptuous-stubs==0.1.1
