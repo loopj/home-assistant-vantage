@@ -29,7 +29,7 @@ Add <https://github.com/loopj/hass-vantage> as a [custom repository](https://hac
 
 ### Manual Install
 
-Place the the folder `custom_components/vantage` in `YOUR_CONFIG_DIR/custom_components/`.
+Download the [latest release](https://github.com/loopj/hass-vantage/releases/latest/download/vantage.zip) and extract the contents to your Home Assistant `config/custom_components` directory.
 
 ## Configuration
 
