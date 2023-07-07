@@ -43,3 +43,10 @@ fixture-parentheses = false
 
 [mccabe]
 max-complexity = 25
+
+[isort]
+force-sort-within-sections = true
+known-first-party = [
+    "homeassistant",
+]
+combine-as-imports = true
