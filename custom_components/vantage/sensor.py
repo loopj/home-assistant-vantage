@@ -67,7 +67,7 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
     @property
-    def attach_to_device(self) -> int | None:
+    def attach_to_device_id(self) -> int | None:
         """The id of the device this entity should be attached to, if any."""
         if self.client.modules.get(self.obj.parent_id) is not None:
             return self.obj.parent_id

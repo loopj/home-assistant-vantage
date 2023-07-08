@@ -1,9 +1,9 @@
 """Support for generic Vantage entities."""
 
-from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
+from typing import Any, Generic, TypeVar
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.config_client.objects import LocationObject, SystemObject
+from aiovantage.config_client.objects import SystemObject
 from aiovantage.controllers.base import BaseController
 
 from homeassistant.components.group import Entity
@@ -12,15 +12,9 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
+from .helpers import get_object_area, get_object_parent_id
 
 T = TypeVar("T", bound=SystemObject)
-
-
-@runtime_checkable
-class ChildObject(Protocol):
-    """A Vantage object that has a parent."""
-
-    parent_id: int
 
 
 class VantageEntity(Generic[T], Entity):
@@ -45,25 +39,23 @@ class VantageEntity(Generic[T], Entity):
         """
 
     @property
-    def unique_id(self) -> str | None:
+    def unique_id(self) -> str:
         """Return the unique id of the entity."""
         return str(self.obj.id)
 
     @property
     def name(self) -> str | None:
         """Return the name of the entity."""
-        if self.attach_to_device is not None:
+        if self.attach_to_device_id is not None:
             return self.obj.name
 
         return None
 
     @property
-    def device_info(self) -> DeviceInfo | None:
+    def device_info(self) -> DeviceInfo:
         """Return the device info for the entity."""
-        if self.attach_to_device is not None:
-            return DeviceInfo(
-                identifiers={(DOMAIN, str(self.attach_to_device))},
-            )
+        if self.attach_to_device_id is not None:
+            return DeviceInfo(identifiers={(DOMAIN, str(self.attach_to_device_id))})
 
         info = DeviceInfo(
             identifiers={(DOMAIN, str(self.obj.id))},
@@ -74,12 +66,11 @@ class VantageEntity(Generic[T], Entity):
             model=self.model,
         )
 
-        if isinstance(self.obj, ChildObject):
-            info["via_device"] = (DOMAIN, str(self.obj.parent_id))
+        if area := get_object_area(self.client, self.obj):
+            info["suggested_area"] = area.name
 
-        if isinstance(self.obj, LocationObject):
-            if area := self.client.areas.get(self.obj.area_id):
-                info["suggested_area"] = area.name
+        if parent_id := get_object_parent_id(self.obj):
+            info["via_device"] = (DOMAIN, str(parent_id))
 
         return info
 
@@ -94,7 +85,7 @@ class VantageEntity(Generic[T], Entity):
         return None
 
     @property
-    def attach_to_device(self) -> int | None:
+    def attach_to_device_id(self) -> int | None:
         """The id of the device this entity should be attached to, if any."""
         return None
 
@@ -111,24 +102,31 @@ class VantageEntity(Generic[T], Entity):
     @callback
     def _handle_event(self, event_type: VantageEvent, obj: T, _data: Any) -> None:
         # Handle callback from Vantage for this object.
-        dev_reg = dr.async_get(self.hass)
         if event_type == VantageEvent.OBJECT_DELETED:
-            # If this object has a device, remove it from the device registry.
-            if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
-                dev_reg.async_remove_device(device.id)
-
-            # Some objects don't have their own device, but are attached to
-            # another device. If so, remove them from the entity registry.
-            if self.attach_to_device is not None:
-                ent_reg = er.async_get(self.hass)
+            # Remove the entity from the entity registry.
+            ent_reg = er.async_get(self.hass)
+            if self.entity_id in ent_reg.entities:
                 ent_reg.async_remove(self.entity_id)
 
+            # If this entity owns a device, also remove it from the device registry.
+            dev_reg = dr.async_get(self.hass)
+            device = dev_reg.async_get_device({(DOMAIN, str(obj.id))})
+            if device is not None:
+                dev_reg.async_remove_device(device.id)
+
         elif event_type == VantageEvent.OBJECT_UPDATED:
-            if self.attach_to_device is None:
-                # Objects that have their own device need to update name, etc
-                # in the device registry.
-                if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
-                    ...  # TODO
+            # If this entity owns a device, update it in the device registry.
+            dev_reg = dr.async_get(self.hass)
+            device = dev_reg.async_get_device({(DOMAIN, str(obj.id))})
+            if (
+                device is not None
+                and self.registry_entry is not None
+                and self.registry_entry.config_entry_id is not None
+            ):
+                dev_reg.async_get_or_create(
+                    config_entry_id=self.registry_entry.config_entry_id,
+                    **self.device_info,
+                )
 
         # Object state is kept up to date by the Vantage client by an internal
         # subscription.  We just need to tell HA the state has changed.

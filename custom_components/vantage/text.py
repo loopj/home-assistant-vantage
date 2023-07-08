@@ -46,7 +46,7 @@ class VantageTextVariable(VantageEntity[GMem], TextEntity):
         self._attr_name = self.obj.name
 
     @property
-    def attach_to_device(self) -> int | None:
+    def attach_to_device_id(self) -> int | None:
         """The id of the device this entity should be attached to, if any."""
         return self.obj.master_id
 

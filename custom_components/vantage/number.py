@@ -84,7 +84,7 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
             self._attr_native_step = 0.001
 
     @property
-    def attach_to_device(self) -> int | None:
+    def attach_to_device_id(self) -> int | None:
         """The id of the device this entity should be attached to, if any."""
         return self.obj.master_id
 
