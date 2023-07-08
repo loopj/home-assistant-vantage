@@ -1,16 +1,16 @@
 """Config flow for Vantage InFusion Controller integration."""
-from __future__ import annotations
-
-import re
 from typing import Any
 
-import voluptuous as vol
 from aiovantage.discovery import (
-    DiscoveredVantageController,
-    discover_controller,
-    valid_credentials,
+    VantageControllerDetails,
+    get_controller_details,
+    get_serial_from_controller,
+    get_serial_from_hostname,
+    validate_credentials,
 )
 from aiovantage.errors import ClientConnectionError
+import voluptuous as vol
+
 from homeassistant import config_entries
 from homeassistant.components import zeroconf
 from homeassistant.config_entries import ConfigEntry
@@ -19,7 +19,7 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .const import DOMAIN
 
-HOST_SCHEMA = vol.Schema(
+USER_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
     }
@@ -32,13 +32,15 @@ AUTH_SCHEMA = vol.Schema(
     }
 )
 
+DEFAULT_VANTAGE_USERNAME = "administrator"
+
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config flow for Vantage InFusion Controller."""
+    """Config flow for Vantage InFusion integration."""
 
     VERSION = 1
 
-    controller: DiscoveredVantageController | None = None
+    controller: VantageControllerDetails | None = None
     username: str | None = None
     password: str | None = None
     reauth_entry: ConfigEntry | None = None
@@ -47,35 +49,31 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle a flow initiated by the user."""
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            # Abort if this controller is already configured
-            self._async_abort_entries_match({CONF_HOST: user_input[CONF_HOST]})
+        if user_input is None:
+            return self.async_show_form(step_id="user", data_schema=USER_SCHEMA)
 
-            # Get information about the controller
-            try:
-                self.controller = await discover_controller(user_input[CONF_HOST])
-            except ClientConnectionError:
-                errors["base"] = "cannot_connect"
+        # Abort if this exact host is already configured
+        self._async_abort_entries_match({CONF_HOST: user_input[CONF_HOST]})
 
-            # Show either the auth form or finish the config flow
-            if self.controller:
-                if self.controller.requires_auth:
-                    return await self.async_step_auth()
-                return await self.async_finish()
+        # Get information about the controller, show an error if it cannot be reached
+        self.controller = await get_controller_details(user_input[CONF_HOST])
+        if self.controller is None:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=USER_SCHEMA,
+                errors={"base": "cannot_connect"},
+            )
 
-        # Show the host input form
-        return self.async_show_form(
-            step_id="user",
-            data_schema=HOST_SCHEMA,
-            errors=errors,
-        )
+        # Show either the auth form or the confirmation form
+        if self.controller.requires_auth:
+            return await self.async_step_auth()
+        return await self.async_finish()
 
     async def async_step_zeroconf(
         self, discovery_info: zeroconf.ZeroconfServiceInfo
     ) -> FlowResult:
         """Handle a flow initiated by zeroconf discovery."""
-        serial_number = self._serial_number_from_hostname(discovery_info.hostname)
+        serial_number = get_serial_from_hostname(discovery_info.hostname)
         if serial_number is None:
             return self.async_abort(reason="unknown")
 
@@ -83,10 +81,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(serial_number)
         self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.host})
 
-        # Get information about the controller
-        try:
-            self.controller = await discover_controller(discovery_info.host)
-        except ClientConnectionError:
+        # Get information about the controller, abort if it cannot be reached
+        self.controller = await get_controller_details(discovery_info.host)
+        if self.controller is None:
             return self.async_abort(reason="cannot_connect")
 
         # Show either the auth form or the confirmation form
@@ -100,16 +97,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a user confirming the discovered Vantage controller."""
         assert self.controller is not None
 
-        if user_input is not None:
-            return await self.async_finish()
-
         # Show the confirmation form
-        return self.async_show_form(
-            step_id="zeroconf_confirm",
-            description_placeholders={
-                "host": self.controller.host,
-            },
-        )
+        if user_input is None:
+            return self.async_show_form(
+                step_id="zeroconf_confirm",
+                description_placeholders={
+                    "host": self.controller.host,
+                },
+            )
+
+        # Move on to the final step
+        return await self.async_finish()
 
     async def async_step_auth(
         self, user_input: dict[str, Any] | None = None
@@ -118,7 +116,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         assert self.controller is not None
 
         errors: dict[str, str] | None = None
-        suggestions: dict[str, str] = {CONF_USERNAME: "administrator"}
+        suggestions: dict[str, str] = {CONF_USERNAME: DEFAULT_VANTAGE_USERNAME}
 
         if user_input is not None:
             # Validate the credentials
@@ -153,6 +151,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Create the config entry with the gathered information."""
         assert self.controller is not None
 
+        # Look up the first controller's serial number
+        serial_number = await get_serial_from_controller(
+            self.controller.host,
+            self.username,
+            self.password,
+            self.controller.supports_ssl,
+        )
+
+        if serial_number is None:
+            return self.async_abort(reason="cannot_connect")
+
+        # Set the unique ID to the serial number, abort if it is already configured
+        await self.async_set_unique_id(str(serial_number), raise_on_progress=False)
+        self._abort_if_unique_id_configured(updates={CONF_HOST: self.controller.host})
+
+        # Create the config entry
         return self.async_create_entry(
             title="Vantage InFusion",
             data={
@@ -170,6 +184,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
         )
+
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -226,17 +241,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> dict[str, str] | None:
         """Validate the credentials for a Vantage controller, returning errors if invalid."""
         try:
-            if not await valid_credentials(host, username, password, ssl):
+            if not await validate_credentials(host, username, password, ssl):
                 return {"base": "invalid_auth"}
         except ClientConnectionError:
             return {"base": "cannot_connect"}
 
         return None
-
-    @staticmethod
-    def _serial_number_from_hostname(hostname: str) -> str | None:
-        """Get the serial number from a Vantage hostname."""
-        match = re.match(r"ic-ii-(?P<serial_number>\d+)", hostname)
-        if not match:
-            return None
-        return match.group("serial_number")

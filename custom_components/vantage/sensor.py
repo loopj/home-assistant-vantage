@@ -1,18 +1,20 @@
-"""Support for Vantage sensor entities.
-
-The following Vantage objects are considered sensor entities:
-- "OmniSensor" objects
-"""
+"""Support for Vantage sensor entities."""
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
-from aiovantage import Vantage
+from aiovantage import Vantage, VantageEvent
 from aiovantage.config_client.objects import OmniSensor
+
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfElectricCurrent, UnitOfPower, UnitOfTemperature
-from homeassistant.core import HomeAssistant
+from homeassistant.const import (
+    UnitOfElectricCurrent,
+    UnitOfPower,
+    UnitOfTemperature,
+)
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
@@ -27,34 +29,50 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage sensors from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    controller = vantage.omni_sensors
 
-    # Expose all omnisensors
-    async for omni_sensor in vantage.omni_sensors:
-        entity = VantageOmniSensor(vantage, omni_sensor)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+    @callback
+    def async_add_entity(_type: VantageEvent, obj: OmniSensor, _data: Any) -> None:
+        async_add_entities([VantageOmniSensor(vantage, controller, obj)])
+
+    # Add all current sensors
+    for obj in controller:
+        async_add_entity(VantageEvent.OBJECT_ADDED, obj, {})
+
+    # Register a callback for new sensors
+    config_entry.async_on_unload(
+        controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
+    )
 
 
 class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
-    """Representation of a Vantage omnisensor."""
+    """Representation of a Vantage OmniSensor."""
 
-    _attr_should_poll = True
-
-    def __init__(self, client: Vantage, obj: OmniSensor):
+    def __post_init__(self) -> None:
         """Initialize a Vantage omnisensor."""
-        super().__init__(client, client.omni_sensors, obj)
+        self._attr_should_poll = True
+        self._attr_state_class = "measurement"
 
         # Set the device class and unit of measurement based on the sensor type
-        if obj.is_current_sensor:
-            self._attr_device_class = SensorDeviceClass.CURRENT
-            self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
-            self._attr_suggested_display_precision = 3
-        elif obj.is_power_sensor:
-            self._attr_device_class = SensorDeviceClass.POWER
-            self._attr_native_unit_of_measurement = UnitOfPower.WATT
-        elif obj.is_temperature_sensor:
-            self._attr_device_class = SensorDeviceClass.TEMPERATURE
-            self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+        match self.obj.model:
+            case "Current":
+                self._attr_device_class = SensorDeviceClass.CURRENT
+                self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
+                self._attr_suggested_display_precision = 3
+            case "Power":
+                self._attr_device_class = SensorDeviceClass.POWER
+                self._attr_native_unit_of_measurement = UnitOfPower.WATT
+            case "Temperature":
+                self._attr_device_class = SensorDeviceClass.TEMPERATURE
+                self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    @property
+    def attach_to_device(self) -> int | None:
+        """The id of the device this entity should be attached to, if any."""
+        if self.client.modules.get(self.obj.parent_id) is not None:
+            return self.obj.parent_id
+
+        return None
 
     @property
     def native_value(self) -> StateType | date | datetime | Decimal:
