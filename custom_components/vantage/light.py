@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.config_client.objects import Load, RGBLoad
+from aiovantage.config_client.objects import Load, LoadGroup, RGBLoad
 from aiovantage.controllers.base import BaseController
 
 from homeassistant.components.light import (
@@ -30,7 +30,7 @@ from .helpers import (
     scale_color_brightness,
 )
 
-T = TypeVar("T", bound=Load | RGBLoad)
+T = TypeVar("T", bound=Load | LoadGroup | RGBLoad)
 
 
 async def async_setup_entry(
@@ -66,6 +66,7 @@ async def async_setup_entry(
     # Set up all light-type objects
     register_items(vantage.loads, VantageLight, lambda obj: obj.is_light)
     register_items(vantage.rgb_loads, VantageRGBLight)
+    register_items(vantage.load_groups, VantageLightGroup)
 
 
 class VantageLight(VantageEntity[Load], LightEntity):
@@ -228,6 +229,43 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
                     kwargs.get(ATTR_TRANSITION, 0),
                     brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
                 )
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the light off."""
+        await self.client.rgb_loads.turn_off(
+            self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
+        )
+
+
+class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
+    """Representation of a Vantage light group."""
+
+    def __post_init__(self) -> None:
+        """Initialize a Vantage light group."""
+        self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+        self._attr_color_mode = ColorMode.BRIGHTNESS
+        self._attr_supported_features |= LightEntityFeature.TRANSITION
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if entity is on."""
+        return self.obj.is_on
+
+    @property
+    def brightness(self) -> int | None:
+        """Return the brightness of this light between 0..255."""
+        if self.obj.level is None:
+            return None
+
+        return level_to_brightness(self.obj.level)
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the light on."""
+        await self.client.loads.turn_on(
+            self.obj.id,
+            kwargs.get(ATTR_TRANSITION, 0),
+            brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
+        )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
