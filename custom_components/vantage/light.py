@@ -45,11 +45,11 @@ async def async_setup_entry(
     def register_items(
         controller: BaseController[T],
         entity_class: type[VantageEntity[T]],
-        filter_fn: Callable[[T], bool] = lambda _: True,
+        object_filter: Callable[[T], bool] | None = None,
     ) -> None:
         @callback
         def async_add_entity(_type: VantageEvent, obj: T, _data: Any) -> None:
-            if filter_fn(obj):
+            if object_filter is None or object_filter(obj):
                 async_add_entities([entity_class(vantage, controller, obj)])
 
         # Add all current members of this controller

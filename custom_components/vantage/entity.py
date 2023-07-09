@@ -32,11 +32,7 @@ class VantageEntity(Generic[T], Entity):
         self.__post_init__()
 
     def __post_init__(self) -> None:
-        """Run after entity is initialized.
-
-        This is a separate method so that subclasses can override it without
-        having to call super().
-        """
+        """Run after entity is initialized."""
 
     @property
     def unique_id(self) -> str:
@@ -130,4 +126,4 @@ class VantageEntity(Generic[T], Entity):
 
         # Object state is kept up to date by the Vantage client by an internal
         # subscription.  We just need to tell HA the state has changed.
-        self.async_schedule_update_ha_state()
+        self.async_write_ha_state()
