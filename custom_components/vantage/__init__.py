@@ -63,25 +63,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Add Vantage devices (controllers, modules, stations) to the device registry
         await async_setup_devices(hass, entry)
 
-        # Monitor controller programming events, and re-initialize if necessary
-        def reinitialize(_type: VantageEvent, _obj: Master, _data: Any) -> None:
-            hass.async_create_task(vantage.initialize())
-
-        if first_master := vantage.masters.first():
-            entry.async_on_unload(
-                vantage.masters.subscribe(
-                    reinitialize,
-                    first_master.id,
-                    VantageEvent.OBJECT_UPDATED,
-                )
-            )
-
         # Set up each platform (lights, covers, etc.)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
     except (LoginRequiredError, LoginFailedError) as err:
         # Handle expired or invalid credentials. This will prompt the user to reconfigure
         # the integration.
         raise ConfigEntryAuthFailed from err
+
     except ClientConnectionError as err:
         # Handle offline or unavailable devices and services. Home Assistant will
         # automatically put the config entry in a failure state and start a reauth flow.
