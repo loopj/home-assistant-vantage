@@ -1,7 +1,7 @@
 """Support for Vantage cover entities."""
 
 import functools
-from typing import Any, TypeVar
+from typing import Any
 
 from aiovantage import Vantage
 from aiovantage.config_client.objects import Blind, BlindGroup
@@ -12,20 +12,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity, async_setup_vantage_entities
-
-T = TypeVar("T", bound=Blind | BlindGroup)
+from .entity import VantageEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up Vantage covers from Config Entry."""
-    vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up Vantage cover entities from config entry."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
     register_items = functools.partial(
-        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+        async_register_vantage_objects, hass, entry, async_add_entities
     )
 
     # Set up all cover entities
@@ -34,7 +30,7 @@ async def async_setup_entry(
 
 
 class VantageCover(VantageEntity[Blind], CoverEntity):
-    """Representation of a Vantage Cover."""
+    """Vantage blind cover entity."""
 
     def __post_init__(self) -> None:
         """Initialize a Vantage Cover."""
@@ -63,7 +59,7 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
 
 
 class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
-    """Representation of a Vantage Cover group."""
+    """Vantage blind group cover entity."""
 
     @property
     def is_closed(self) -> bool | None:
