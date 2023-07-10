@@ -83,15 +83,16 @@ If you have already committed files before setting up the pre-commit hook with `
 Update the version number in `custom_components/vantage/manifest.json`, and commit the change to source control.
 
 ```bash
+VERSION="1.2.3"
 git add custom_components/vantage/manifest.json
-git commit -m "Preparing release 1.2.3"
+git commit -m "Preparing release $VERSION"
 ```
 
 Tag the release, eg:
 
 ```bash
-git tag 1.2.3
+git tag $VERSION
 git push && git push --tags
 ```
 
-Releases are published automatically to HACS when a new tag is pushed to the repository.
+Releases are published automatically to HACS when a GitHub release is created from the new tag.

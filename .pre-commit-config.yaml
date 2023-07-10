@@ -5,7 +5,7 @@ repos:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.275
+    rev: v0.0.277
     hooks:
       - id: ruff
         args: ["--fix"]
@@ -17,7 +17,7 @@ repos:
         additional_dependencies:
           - aiovantage==0.7.0
           - voluptuous-stubs==0.1.1
-          - homeassistant-stubs==2023.7.0
+          - homeassistant-stubs==2023.7.1
         args: []
 
   - repo: https://github.com/thlorenz/doctoc
