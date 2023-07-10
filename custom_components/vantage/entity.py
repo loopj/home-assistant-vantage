@@ -1,5 +1,6 @@
 """Support for generic Vantage entities."""
 
+from collections.abc import Callable
 from typing import Any, Generic, TypeVar
 
 from aiovantage import Vantage, VantageEvent
@@ -7,9 +8,11 @@ from aiovantage.config_client.objects import SystemObject
 from aiovantage.controllers.base import BaseController
 
 from homeassistant.components.group import Entity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .helpers import get_object_area, get_object_parent_id
@@ -17,11 +20,43 @@ from .helpers import get_object_area, get_object_parent_id
 T = TypeVar("T", bound=SystemObject)
 
 
+def async_setup_vantage_entities(
+    vantage: Vantage,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+    controller: BaseController[T],
+    entity_class: type["VantageEntity[T]"],
+    object_filter: Callable[[T], bool] | None = None,
+) -> None:
+    """Add entities to HA from a Vantage controller, add a callback for new entities."""
+
+    # Add all current objects in the controller that match the filter
+    objects = controller.filter(object_filter) if object_filter else controller
+    entities = [entity_class(vantage, controller, obj) for obj in objects]
+    async_add_entities(entities)
+
+    # Register a callback for objects added to this controller that match the filter
+    @callback
+    def async_add_entity(_type: VantageEvent, obj: T, _data: Any) -> None:
+        if object_filter is None or object_filter(obj):
+            async_add_entities([entity_class(vantage, controller, obj)])
+
+    config_entry.async_on_unload(
+        controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
+    )
+
+
 class VantageEntity(Generic[T], Entity):
     """Base class for Vantage entities."""
 
     _attr_should_poll = False
+    _attr_name: str | None = None
     _attr_has_entity_name = True
+
+    _device_id: str | None = None
+    _device_model: str | None = None
+    _device_manufacturer: str | None = None
+    _device_is_service: bool = False
 
     def __init__(self, client: Vantage, controller: BaseController[T], obj: T):
         """Initialize a generic Vantage entity."""
@@ -29,61 +64,44 @@ class VantageEntity(Generic[T], Entity):
         self.controller = controller
         self.obj = obj
 
+        self._attr_unique_id = str(obj.id)
+
         self.__post_init__()
 
     def __post_init__(self) -> None:
         """Run after entity is initialized."""
 
     @property
-    def unique_id(self) -> str:
-        """Return the unique id of the entity."""
-        return str(self.obj.id)
-
-    @property
-    def name(self) -> str | None:
-        """Return the name of the entity."""
-        if self.attach_to_device_id is not None:
-            return self.obj.name
-
-        return None
-
-    @property
     def device_info(self) -> DeviceInfo:
         """Return the device info for the entity."""
-        if self.attach_to_device_id is not None:
-            return DeviceInfo(identifiers={(DOMAIN, str(self.attach_to_device_id))})
+        if self._device_id is not None:
+            return DeviceInfo(identifiers={(DOMAIN, self._device_id)})
 
         info = DeviceInfo(
             identifiers={(DOMAIN, str(self.obj.id))},
             name=self.obj.name,
             default_manufacturer="Vantage",
             default_model=self.obj.model,
-            manufacturer=self.manufacturer,
-            model=self.model,
         )
+
+        if self._device_model:
+            info["model"] = self._device_model
+
+        if self._device_manufacturer:
+            info["manufacturer"] = self._device_manufacturer
+
+        if self._device_is_service:
+            info["entry_type"] = dr.DeviceEntryType.SERVICE
 
         if area := get_object_area(self.client, self.obj):
             info["suggested_area"] = area.name
 
         if parent_id := get_object_parent_id(self.obj):
             info["via_device"] = (DOMAIN, str(parent_id))
+        else:
+            info["via_device"] = (DOMAIN, str(self.obj.master_id))
 
         return info
-
-    @property
-    def manufacturer(self) -> str | None:
-        """Manufacturer of the entity."""
-        return None
-
-    @property
-    def model(self) -> str | None:
-        """Model of the entity."""
-        return None
-
-    @property
-    def attach_to_device_id(self) -> int | None:
-        """The id of the device this entity should be attached to, if any."""
-        return None
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""

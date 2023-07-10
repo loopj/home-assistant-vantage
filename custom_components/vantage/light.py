@@ -1,11 +1,10 @@
 """Support for Vantage light entities."""
 
-from collections.abc import Callable
-from typing import Any, TypeVar
+import functools
+from typing import Any
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import Vantage
 from aiovantage.config_client.objects import Load, LoadGroup, RGBLoad
-from aiovantage.controllers.base import BaseController
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -19,18 +18,16 @@ from homeassistant.components.light import (
     LightEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity
+from .entity import VantageEntity, async_setup_vantage_entities
 from .helpers import (
     brightness_to_level,
     level_to_brightness,
     scale_color_brightness,
 )
-
-T = TypeVar("T", bound=Load | LoadGroup | RGBLoad)
 
 
 async def async_setup_entry(
@@ -40,28 +37,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage lights from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
-
-    @callback
-    def register_items(
-        controller: BaseController[T],
-        entity_class: type[VantageEntity[T]],
-        object_filter: Callable[[T], bool] | None = None,
-    ) -> None:
-        @callback
-        def async_add_entity(_type: VantageEvent, obj: T, _data: Any) -> None:
-            if object_filter is None or object_filter(obj):
-                async_add_entities([entity_class(vantage, controller, obj)])
-
-        # Add all current members of this controller
-        for obj in controller:
-            async_add_entity(VantageEvent.OBJECT_ADDED, obj, {})
-
-        # Register a callback for new members
-        config_entry.async_on_unload(
-            controller.subscribe(
-                async_add_entity, event_filter=VantageEvent.OBJECT_ADDED
-            )
-        )
+    register_items = functools.partial(
+        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+    )
 
     # Set up all light-type objects
     register_items(vantage.loads, VantageLight, lambda obj: obj.is_light)
@@ -70,10 +48,12 @@ async def async_setup_entry(
 
 
 class VantageLight(VantageEntity[Load], LightEntity):
-    """Representation of a Vantage light."""
+    """Vantage light entity."""
 
     def __post_init__(self) -> None:
         """Initialize the light."""
+        self._device_model = f"{self.obj.load_type} Load"
+
         self._attr_supported_color_modes: set[str] = set()
         if self.obj.is_dimmable:
             self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
@@ -82,11 +62,6 @@ class VantageLight(VantageEntity[Load], LightEntity):
         else:
             self._attr_supported_color_modes.add(ColorMode.ONOFF)
             self._attr_color_mode = ColorMode.ONOFF
-
-    @property
-    def model(self) -> str | None:
-        """Return the model of the light."""
-        return f"{self.obj.load_type} Load"
 
     @property
     def is_on(self) -> bool | None:
@@ -115,10 +90,12 @@ class VantageLight(VantageEntity[Load], LightEntity):
 
 
 class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
-    """Representation of a Vantage RGB light."""
+    """Vantage RGB light entity."""
 
     def __post_init__(self) -> None:
         """Initialize the light."""
+        self._device_model = "RGB Load"
+
         self._attr_supported_color_modes: set[str] = set()
         match self.obj.color_type:
             case RGBLoad.ColorType.HSL:
@@ -141,11 +118,6 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
         # All RGB lights support transition
         self._attr_supported_features |= LightEntityFeature.TRANSITION
-
-    @property
-    def model(self) -> str | None:
-        """Return the model of the light."""
-        return "RGB Load"
 
     @property
     def is_on(self) -> bool | None:
@@ -238,7 +210,10 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
 
 class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
-    """Representation of a Vantage light group."""
+    """Vantage light group entity."""
+
+    _attr_icon = "mdi:lightbulb-group"
+    _device_is_service = True
 
     def __post_init__(self) -> None:
         """Initialize a Vantage light group."""

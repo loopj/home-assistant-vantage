@@ -130,10 +130,21 @@ async def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
         # Register a callback for new members
         entry.async_on_unload(controller.subscribe(handle_device_event))
 
-    # Register all devices
+    # Register controllers, modules, and stations
     register_items(vantage.masters)
     register_items(vantage.modules)
     register_items(vantage.stations)
+
+    # Create virtual devices to hold variables
+    for master in vantage.masters:
+        dev_reg.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, f"variables_{master.id}")},
+            name="Variables",
+            manufacturer="Vantage",
+            entry_type=dr.DeviceEntryType.SERVICE,
+            via_device=(DOMAIN, str(master.id)),
+        )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -1,25 +1,28 @@
 """Support for Vantage sensor entities."""
 
+import contextlib
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any
+import functools
+import socket
 
-from aiovantage import Vantage, VantageEvent
-from aiovantage.config_client.objects import OmniSensor
+from aiovantage import Vantage
+from aiovantage.config_client.objects import Master, OmniSensor
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    EntityCategory,
     UnitOfElectricCurrent,
     UnitOfPower,
     UnitOfTemperature,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from .const import DOMAIN
-from .entity import VantageEntity
+from .entity import VantageEntity, async_setup_vantage_entities
 
 
 async def async_setup_entry(
@@ -29,29 +32,29 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage sensors from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
-    controller = vantage.omni_sensors
-
-    @callback
-    def async_add_entity(_type: VantageEvent, obj: OmniSensor, _data: Any) -> None:
-        async_add_entities([VantageOmniSensor(vantage, controller, obj)])
-
-    # Add all current sensors
-    for obj in controller:
-        async_add_entity(VantageEvent.OBJECT_ADDED, obj, {})
-
-    # Register a callback for new sensors
-    config_entry.async_on_unload(
-        controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
+    register_items = functools.partial(
+        async_setup_vantage_entities, vantage, config_entry, async_add_entities
     )
+
+    # Register all sensor entities
+    register_items(vantage.omni_sensors, VantageOmniSensor)
+    register_items(vantage.masters, VantageMasterSerial)
+    register_items(vantage.masters, VantageMasterIP)
 
 
 class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
     """Representation of a Vantage OmniSensor."""
 
+    _attr_should_poll = True
+    _attr_state_class = "measurement"
+
     def __post_init__(self) -> None:
         """Initialize a Vantage omnisensor."""
-        self._attr_should_poll = True
-        self._attr_state_class = "measurement"
+        # If this is a module omnisensor, attach it to the module device
+        if self.client.modules.get(self.obj.parent_id) is not None:
+            self._attr_name = self.obj.name
+            self._device_id = str(self.obj.parent_id)
+            self._attr_entity_registry_enabled_default = False
 
         # Set the device class and unit of measurement based on the sensor type
         match self.obj.model:
@@ -67,14 +70,6 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
     @property
-    def attach_to_device_id(self) -> int | None:
-        """The id of the device this entity should be attached to, if any."""
-        if self.client.modules.get(self.obj.parent_id) is not None:
-            return self.obj.parent_id
-
-        return None
-
-    @property
     def native_value(self) -> StateType | date | datetime | Decimal:
         """Return the value reported by the sensor."""
         return self.obj.level
@@ -82,3 +77,33 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
     async def async_update(self) -> None:
         """Update the state of the sensor."""
         await self.client.omni_sensors.get_level(self.obj.id)
+
+
+class VantageMasterSerial(VantageEntity[Master], SensorEntity):
+    """Representation of a Vantage master serial number."""
+
+    _attr_icon = "mdi:barcode"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_name = "Serial Number"
+
+    def __post_init__(self) -> None:
+        """Initialize a Vantage master serial number."""
+        self._device_id = str(self.obj.id)
+        self._attr_unique_id = f"{self.obj.id}_serial_number"
+        self._attr_native_value = str(self.obj.serial_number)
+
+
+class VantageMasterIP(VantageEntity[Master], SensorEntity):
+    """Representation of a Vantage master IP address."""
+
+    _attr_icon = "mdi:ip"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_name = "IP Address"
+
+    def __post_init__(self) -> None:
+        """Initialize a Vantage master IP address."""
+        self._device_id = str(self.obj.id)
+        self._attr_unique_id = f"{self.obj.id}_ip_address"
+
+        with contextlib.suppress(socket.gaierror):
+            self._attr_native_value = socket.gethostbyname(self.client.host)

@@ -1,17 +1,17 @@
 """Support for Vantage binary sensor entities."""
 
-from typing import Any
+import functools
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import Vantage
 from aiovantage.config_client.objects import DryContact
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity
+from .entity import VantageEntity, async_setup_vantage_entities
 
 
 async def async_setup_entry(
@@ -21,20 +21,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage binary sensors from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
-    controller = vantage.dry_contacts
-
-    @callback
-    def async_add_entity(_type: VantageEvent, obj: DryContact, _data: Any) -> None:
-        async_add_entities([VantageDryContact(vantage, controller, obj)])
-
-    # Add all current members of this controller
-    for obj in controller:
-        async_add_entity(VantageEvent.OBJECT_ADDED, obj, {})
-
-    # Register a callback to add new members
-    config_entry.async_on_unload(
-        controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
+    register_items = functools.partial(
+        async_setup_vantage_entities, vantage, config_entry, async_add_entities
     )
+
+    # Set up all cover entities
+    register_items(vantage.dry_contacts, VantageDryContact)
 
 
 class VantageDryContact(VantageEntity[DryContact], BinarySensorEntity):

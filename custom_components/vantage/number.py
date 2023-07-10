@@ -1,19 +1,18 @@
 """Support for Vantage number entities."""
 
-from typing import Any
+import functools
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import Vantage
 from aiovantage.config_client.objects import GMem
-from aiovantage.controllers.gmem import GMemController
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity
+from .entity import VantageEntity, async_setup_vantage_entities
 
 
 async def async_setup_entry(
@@ -23,28 +22,24 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage numbers from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
-    controller: GMemController = vantage.gmem
-
-    @callback
-    def async_add_entity(_type: VantageEvent, obj: GMem, _data: Any) -> None:
-        if obj.is_int:
-            async_add_entities([VantageNumberVariable(vantage, controller, obj)])
-
-    # Add all current members of this controller
-    for number in controller:
-        async_add_entity(VantageEvent.OBJECT_ADDED, number, {})
-
-    # Register a callback for new members
-    config_entry.async_on_unload(
-        controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
+    register_items = functools.partial(
+        async_setup_vantage_entities, vantage, config_entry, async_add_entities
     )
+
+    # Register all number entities
+    register_items(vantage.gmem, VantageNumberVariable, lambda obj: obj.is_int)
 
 
 class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
     """Representation of a Vantage number GMem variable."""
 
+    _attr_entity_registry_visible_default = False
+
     def __post_init__(self) -> None:
         """Initialize a Vantage number variable."""
+        self._attr_name = self.obj.name
+        self._device_id = f"variables_{self.obj.master_id}"
+
         match self.obj.tag.type:
             case "DeviceUnits":
                 # Generic fixed-precision unsigned measurement unit
@@ -82,11 +77,6 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
 
         if self.obj.is_fixed:
             self._attr_native_step = 0.001
-
-    @property
-    def attach_to_device_id(self) -> int | None:
-        """The id of the device this entity should be attached to, if any."""
-        return self.obj.master_id
 
     @property
     def native_value(self) -> float | None:

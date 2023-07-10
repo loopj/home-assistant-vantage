@@ -1,19 +1,18 @@
 """Support for Vantage cover entities."""
 
-from collections.abc import Callable
+import functools
 from typing import Any, TypeVar
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import Vantage
 from aiovantage.config_client.objects import Blind, BlindGroup
-from aiovantage.controllers.base import BaseController
 
 from homeassistant.components.cover import CoverDeviceClass, CoverEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity
+from .entity import VantageEntity, async_setup_vantage_entities
 
 T = TypeVar("T", bound=Blind | BlindGroup)
 
@@ -25,30 +24,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage covers from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    register_items = functools.partial(
+        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+    )
 
-    @callback
-    def register_items(
-        controller: BaseController[T],
-        entity_class: type[VantageEntity[T]],
-        object_filter: Callable[[T], bool] | None = None,
-    ) -> None:
-        @callback
-        def async_add_entity(_type: VantageEvent, obj: T, _data: Any) -> None:
-            if object_filter is None or object_filter(obj):
-                async_add_entities([entity_class(vantage, controller, obj)])
-
-        # Add all current members of this controller
-        for obj in controller:
-            async_add_entity(VantageEvent.OBJECT_ADDED, obj, {})
-
-        # Register a callback for new members
-        config_entry.async_on_unload(
-            controller.subscribe(
-                async_add_entity, event_filter=VantageEvent.OBJECT_ADDED
-            )
-        )
-
-    # Set up all cover-type objects
+    # Set up all cover entities
     register_items(vantage.blinds, VantageCover)
     register_items(vantage.blind_groups, VantageCoverGroup)
 
