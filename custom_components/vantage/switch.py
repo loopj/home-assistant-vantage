@@ -12,18 +12,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity, async_setup_vantage_entities
+from .entity import VantageEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up Vantage switches from Config Entry."""
-    vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up Vantage switch entities from config entry."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
     register_items = functools.partial(
-        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+        async_register_vantage_objects, hass, entry, async_add_entities
     )
 
     # Register all switch entities
@@ -32,7 +30,7 @@ async def async_setup_entry(
 
 
 class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
-    """Representation of a Vantage relay."""
+    """Vantage relay load switch entity."""
 
     def __post_init__(self) -> None:
         """Initialize the switch."""
@@ -53,14 +51,14 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
 
 
 class VantageVariableSwitch(VantageEntity[GMem], SwitchEntity):
-    """Representation of a Vantage boolean GMem variable."""
+    """Vantage boolean variable switch entity."""
 
     _attr_entity_registry_visible_default = False
 
     def __post_init__(self) -> None:
         """Initialize the switch."""
         self._attr_name = self.obj.name
-        self._device_id = f"variables_{self.obj.master_id}"
+        self._device_id = f"{self.obj.master_id}:variables"
 
     @property
     def is_on(self) -> bool | None:

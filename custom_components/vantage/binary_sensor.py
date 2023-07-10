@@ -11,18 +11,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity, async_setup_vantage_entities
+from .entity import VantageEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up Vantage binary sensors from Config Entry."""
-    vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up Vantage binary sensor entities from a config entry."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
     register_items = functools.partial(
-        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+        async_register_vantage_objects, hass, entry, async_add_entities
     )
 
     # Set up all cover entities
@@ -30,7 +28,7 @@ async def async_setup_entry(
 
 
 class VantageDryContact(VantageEntity[DryContact], BinarySensorEntity):
-    """Representation of a Vantage dry contact."""
+    """Vantage dry contact binary sensor entity."""
 
     @property
     def is_on(self) -> bool | None:

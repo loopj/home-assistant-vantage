@@ -22,23 +22,17 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity, async_setup_vantage_entities
-from .helpers import (
-    brightness_to_level,
-    level_to_brightness,
-    scale_color_brightness,
-)
+from .entity import VantageEntity, async_register_vantage_objects
+from .helpers import brightness_to_level, level_to_brightness, scale_color_brightness
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up Vantage lights from Config Entry."""
-    vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up Vantage light entities from config entry."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
     register_items = functools.partial(
-        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+        async_register_vantage_objects, hass, entry, async_add_entities
     )
 
     # Set up all light-type objects
@@ -48,7 +42,7 @@ async def async_setup_entry(
 
 
 class VantageLight(VantageEntity[Load], LightEntity):
-    """Vantage light entity."""
+    """Vantage load light entity."""
 
     def __post_init__(self) -> None:
         """Initialize the light."""
@@ -90,7 +84,7 @@ class VantageLight(VantageEntity[Load], LightEntity):
 
 
 class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
-    """Vantage RGB light entity."""
+    """Vantage RGB load light entity."""
 
     def __post_init__(self) -> None:
         """Initialize the light."""

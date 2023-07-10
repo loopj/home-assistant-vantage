@@ -22,18 +22,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from .const import DOMAIN
-from .entity import VantageEntity, async_setup_vantage_entities
+from .entity import VantageEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up Vantage sensors from Config Entry."""
-    vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up Vantage sensor entities from config entry."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
     register_items = functools.partial(
-        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+        async_register_vantage_objects, hass, entry, async_add_entities
     )
 
     # Register all sensor entities
@@ -43,7 +41,7 @@ async def async_setup_entry(
 
 
 class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
-    """Representation of a Vantage OmniSensor."""
+    """Vantage 'OmniSensor' sensory entity."""
 
     _attr_should_poll = True
     _attr_state_class = "measurement"
@@ -80,7 +78,7 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
 
 
 class VantageMasterSerial(VantageEntity[Master], SensorEntity):
-    """Representation of a Vantage master serial number."""
+    """Vantage controller serial number sensor entity."""
 
     _attr_icon = "mdi:barcode"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -89,12 +87,12 @@ class VantageMasterSerial(VantageEntity[Master], SensorEntity):
     def __post_init__(self) -> None:
         """Initialize a Vantage master serial number."""
         self._device_id = str(self.obj.id)
-        self._attr_unique_id = f"{self.obj.id}_serial_number"
+        self._attr_unique_id = f"{self.obj.id}:serial_number"
         self._attr_native_value = str(self.obj.serial_number)
 
 
 class VantageMasterIP(VantageEntity[Master], SensorEntity):
-    """Representation of a Vantage master IP address."""
+    """Vantage controller IP address sensor entity."""
 
     _attr_icon = "mdi:ip"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -103,7 +101,7 @@ class VantageMasterIP(VantageEntity[Master], SensorEntity):
     def __post_init__(self) -> None:
         """Initialize a Vantage master IP address."""
         self._device_id = str(self.obj.id)
-        self._attr_unique_id = f"{self.obj.id}_ip_address"
+        self._attr_unique_id = f"{self.obj.id}:ip_address"
 
         with contextlib.suppress(socket.gaierror):
             self._attr_native_value = socket.gethostbyname(self.client.host)

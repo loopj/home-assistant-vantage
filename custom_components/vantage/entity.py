@@ -9,7 +9,7 @@ from aiovantage.controllers.base import BaseController
 
 from homeassistant.components.group import Entity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -20,15 +20,16 @@ from .helpers import get_object_area, get_object_parent_id
 T = TypeVar("T", bound=SystemObject)
 
 
-def async_setup_vantage_entities(
-    vantage: Vantage,
-    config_entry: ConfigEntry,
+def async_register_vantage_objects(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
     controller: BaseController[T],
     entity_class: type["VantageEntity[T]"],
     object_filter: Callable[[T], bool] | None = None,
 ) -> None:
     """Add entities to HA from a Vantage controller, add a callback for new entities."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
 
     # Add all current objects in the controller that match the filter
     objects = controller.filter(object_filter) if object_filter else controller
@@ -41,9 +42,20 @@ def async_setup_vantage_entities(
         if object_filter is None or object_filter(obj):
             async_add_entities([entity_class(vantage, controller, obj)])
 
-    config_entry.async_on_unload(
+    entry.async_on_unload(
         controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
     )
+
+
+def async_cleanup_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove entities from HA that are no longer in the Vantage controller."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    ent_reg = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        # Entity IDs always start with the object ID, followed by an optional suffix
+        vantage_id = int(entity.unique_id.split(":")[0])
+        if vantage_id not in vantage.known_ids:
+            ent_reg.async_remove(entity.entity_id)
 
 
 class VantageEntity(Generic[T], Entity):
