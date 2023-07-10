@@ -1,11 +1,10 @@
-"""Support for Vantage number entities.
+"""Support for Vantage number entities."""
 
-The following Vantage objects are considered number entities:
-- "GMem" objects that are numbers
-"""
+import functools
 
 from aiovantage import Vantage
 from aiovantage.config_client.objects import GMem
+
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
@@ -13,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity
+from .entity import VantageEntity, async_setup_vantage_entities
 
 
 async def async_setup_entry(
@@ -23,22 +22,25 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage numbers from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    register_items = functools.partial(
+        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+    )
 
-    # Integer GMem objects are Number entities
-    async for gmem in vantage.gmem.filter(lambda gmem: gmem.is_int):
-        entity = VantageNumberVariable(vantage, gmem)
-        await entity.fetch_relations()
-        async_add_entities([entity])
+    # Register all number entities
+    register_items(vantage.gmem, VantageNumberVariable, lambda obj: obj.is_int)
 
 
 class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
     """Representation of a Vantage number GMem variable."""
 
-    def __init__(self, client: Vantage, obj: GMem):
-        """Initialize a Vantage number variable."""
-        super().__init__(client, client.gmem, obj)
+    _attr_entity_registry_visible_default = False
 
-        match obj.tag.type:
+    def __post_init__(self) -> None:
+        """Initialize a Vantage number variable."""
+        self._attr_name = self.obj.name
+        self._device_id = f"variables_{self.obj.master_id}"
+
+        match self.obj.tag.type:
             case "DeviceUnits":
                 # Generic fixed-precision unsigned measurement unit
                 self._attr_native_min_value = 0
@@ -79,7 +81,6 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
     @property
     def native_value(self) -> float | None:
         """Return the value reported by the number."""
-
         if isinstance(self.obj.value, int):
             if self.obj.is_fixed:
                 return self.obj.value / 1000
@@ -90,7 +91,6 @@ class VantageNumberVariable(VantageEntity[GMem], NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
-
         if self.obj.is_fixed:
             value = int(value * 1000)
         else:

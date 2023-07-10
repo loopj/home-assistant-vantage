@@ -1,20 +1,18 @@
-"""Support for Vantage switch entities.
+"""Support for Vantage switch entities."""
 
-The following Vantage objects are considered switch entities:
-- "Load" objects that are relays
-- "GMem" objects that are booleans
-"""
-
+import functools
 from typing import Any
+
 from aiovantage import Vantage
-from aiovantage.config_client.objects import Load, GMem
+from aiovantage.config_client.objects import GMem, Load
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity
+from .entity import VantageEntity, async_setup_vantage_entities
 
 
 async def async_setup_entry(
@@ -24,26 +22,21 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage switches from Config Entry."""
     vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    register_items = functools.partial(
+        async_setup_vantage_entities, vantage, config_entry, async_add_entities
+    )
 
-    # Relay Load objects are switches
-    async for load in vantage.loads.relays:
-        relay_entity = VantageRelay(vantage, load)
-        await relay_entity.fetch_relations()
-        async_add_entities([relay_entity])
-
-    # Boolean GMem objects are switches
-    async for gmem in vantage.gmem.filter(lambda gmem: gmem.is_bool):
-        gmem_entity = VantageBooleanVariable(vantage, gmem)
-        await gmem_entity.fetch_relations()
-        async_add_entities([gmem_entity])
+    # Register all switch entities
+    register_items(vantage.loads, VantageLoadSwitch, lambda obj: obj.is_relay)
+    register_items(vantage.gmem, VantageVariableSwitch, lambda obj: obj.is_bool)
 
 
-class VantageRelay(VantageEntity[Load], SwitchEntity):
+class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
     """Representation of a Vantage relay."""
 
-    def __init__(self, client: Vantage, obj: Load):
-        """Initialize a Vantage relay."""
-        super().__init__(client, client.loads, obj)
+    def __post_init__(self) -> None:
+        """Initialize the switch."""
+        self._model = f"{self.obj.load_type} Load"
 
     @property
     def is_on(self) -> bool | None:
@@ -59,12 +52,15 @@ class VantageRelay(VantageEntity[Load], SwitchEntity):
         await self.client.loads.turn_off(self.obj.id)
 
 
-class VantageBooleanVariable(VantageEntity[GMem], SwitchEntity):
+class VantageVariableSwitch(VantageEntity[GMem], SwitchEntity):
     """Representation of a Vantage boolean GMem variable."""
 
-    def __init__(self, client: Vantage, obj: GMem):
-        """Initialize a Vantage boolean variable."""
-        super().__init__(client, client.gmem, obj)
+    _attr_entity_registry_visible_default = False
+
+    def __post_init__(self) -> None:
+        """Initialize the switch."""
+        self._attr_name = self.obj.name
+        self._device_id = f"variables_{self.obj.master_id}"
 
     @property
     def is_on(self) -> bool | None:
