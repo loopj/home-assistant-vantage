@@ -1,6 +1,9 @@
 """The Vantage InFusion Controller integration."""
 
-from aiovantage import Vantage
+from typing import Any
+
+from aiovantage import Vantage, VantageEvent
+from aiovantage.config_client.objects import Button
 from aiovantage.errors import (
     ClientConnectionError,
     LoginFailedError,
@@ -38,7 +41,6 @@ PLATFORMS: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
-
     # Create a Vantage client
     vantage = Vantage(
         entry.data[CONF_HOST],
@@ -57,6 +59,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Add Vantage devices (controllers, modules, stations) to the device registry
         async_setup_devices(hass, entry)
 
+        # Generate events for button presses
+        async_setup_events(hass, entry)
+
         # Set up each platform (lights, covers, etc.)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -74,6 +79,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from err
 
     return True
+
+
+def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Set up Vantage events from a config entry."""
+    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+
+    # Subscribe to button events
+    def button_update_callback(_event: VantageEvent, obj: Button, data: Any) -> None:
+        """Handle button pressed events."""
+        if "pressed" not in data["attrs_changed"]:
+            return
+
+        payload = {
+            "button_id": obj.id,
+            "button_name": obj.name,
+            "button_position": "TODO",
+        }
+
+        if station := vantage.stations.get(obj.parent_id):
+            payload["station_id"] = station.id
+            payload["station_name"] = station.name
+
+        if obj.pressed:
+            hass.bus.async_fire(f"{DOMAIN}_button_pressed", payload)
+        else:
+            hass.bus.async_fire(f"{DOMAIN}_button_released", payload)
+
+    entry.async_on_unload(
+        vantage.buttons.subscribe(
+            button_update_callback, event_filter=VantageEvent.OBJECT_UPDATED
+        )
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
