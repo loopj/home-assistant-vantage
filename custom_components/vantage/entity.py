@@ -77,6 +77,8 @@ class VantageEntity(Generic[T], Entity):
         self.obj = obj
 
         self._attr_unique_id = str(obj.id)
+        self._device_manufacturer = "Vantage"
+        self._device_model = obj.model
 
         self.__post_init__()
 
@@ -92,15 +94,9 @@ class VantageEntity(Generic[T], Entity):
         info = DeviceInfo(
             identifiers={(DOMAIN, str(self.obj.id))},
             name=self.obj.name,
-            default_manufacturer="Vantage",
-            default_model=self.obj.model,
+            manufacturer=self._device_manufacturer,
+            model=self._device_model,
         )
-
-        if self._device_model:
-            info["model"] = self._device_model
-
-        if self._device_manufacturer:
-            info["manufacturer"] = self._device_manufacturer
 
         if self._device_is_service:
             info["entry_type"] = dr.DeviceEntryType.SERVICE
