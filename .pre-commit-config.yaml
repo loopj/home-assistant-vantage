@@ -24,5 +24,4 @@ repos:
     rev: v2.2.0
     hooks:
       - id: doctoc
-        args: ["--github", "--notitle", "--maxlevel=2"]
-        files: CONTRIBUTING.md
+        args: ["--github", "--notitle", "--maxlevel=2", "--update-only"]
