@@ -12,7 +12,7 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/loopj/hass-vantage/issues",
   "requirements": [
-    "aiovantage==0.7.0"
+    "aiovantage==0.8.0"
   ],
   "version": "0.5.2",
   "zeroconf": [

@@ -7,7 +7,7 @@ import functools
 import socket
 
 from aiovantage import Vantage
-from aiovantage.config_client.objects import Master, OmniSensor
+from aiovantage.models import Master, OmniSensor
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry

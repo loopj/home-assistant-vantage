@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.config_client.objects import Blind, BlindGroup
+from aiovantage.models import Blind, BlindGroup
 
 from homeassistant.components.cover import CoverDeviceClass, CoverEntity
 from homeassistant.config_entries import ConfigEntry

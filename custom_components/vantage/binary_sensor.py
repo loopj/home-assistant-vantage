@@ -3,7 +3,7 @@
 import functools
 
 from aiovantage import Vantage
-from aiovantage.config_client.objects import DryContact
+from aiovantage.models import DryContact
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry

@@ -3,7 +3,7 @@
 from typing import Any, TypeVar
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.config_client.objects import Master, SystemObject
+from aiovantage.models import Master, SystemObject
 from aiovantage.controllers.base import BaseController
 
 from homeassistant.config_entries import ConfigEntry

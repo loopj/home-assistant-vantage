@@ -1,16 +1,7 @@
 """Helper functions for Vantage integration."""
 
-from typing import Protocol, runtime_checkable
-
 from aiovantage import Vantage
-from aiovantage.config_client.objects import Area, LocationObject, SystemObject
-
-
-@runtime_checkable
-class ChildObject(Protocol):
-    """A Vantage object that has a parent."""
-
-    parent_id: int
+from aiovantage.models import Area, ChildObject, LocationObject, SystemObject
 
 
 def scale_color_brightness(
