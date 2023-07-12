@@ -1,24 +1,21 @@
 # Vantage InFusion integration for Home Assistant
 
+[![GitHub release](https://img.shields.io/github/v/release/loopj/hass-vantage?style=for-the-badge)](http://github.com/loopj/hass-vantage/releases/latest)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
-
-## Table of contents
-
-<!-- START doctoc generated TOC -->
-<!-- END doctoc generated TOC -->
 
 ## Features
 
 The features of this integration include:
 
-- Controlling Vantage devices (lights, shades, motion sensors, etc) as Home Assistant entities.
-- Triggering automations based on Vantage keypad button presses.
-- Starting and stopping Vantage tasks from Home Assistant.
+- Control Vantage devices (lights, shades, motion sensors, etc) as [Home Assistant entities](#platforms).
+- Trigger automations based on Vantage keypad button presses, using [events](#events).
+- Start Vantage tasks from Home Assistant, using [services](#services).
 - Automatic Vantage controller discovery (via mDNS).
 - UI-based configuration (config flow).
 - Entity state updated using [Local Push](https://www.home-assistant.io/blog/2016/02/12/classifying-the-internet-of-things/#classifiers).
+- Entities and devices are automatically synchronized upon restart of Home Assistant when changed in Vantage.
 - Non-blocking I/O, via asyncio and [aiovantage](https://github.com/loopj/aiovantage).
 - Uses SSL connections by default, with automatic reconnection.
 
@@ -57,25 +54,23 @@ If it wasn’t discovered automatically, you can set up a manual integration ent
 
 ## Platforms
 
-### Light
+### Lights
 
-Vantage *loads* and *load groups* will appear as lights in Home Assistant, except for loads labeled as *relays* or *motors* in Design Center. Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will appear as lights in Home Assistant.
+Vantage *loads* and *load groups* will appear as lights in Home Assistant, except for loads labeled as *relays* or *motors* in Design Center.
 
-### Switch
+Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will appear as lights in Home Assistant.
+
+### Switches
 
 Vantage *loads* labeled as *relays* will appear as switches in Home Assistant. If you have a relay load that you'd like to show up as a different type of entity, you can use the [Change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
 
 Additionally, Vantage *variables* with a type of *Boolean* will appear as switches in Home Assistant.
 
-### Cover
-
-Vantage *blinds* and *blind groups* will appear as covers in Home Assistant.
-
-### Binary Sensor
+### Binary Sensors
 
 Vantage *dry contacts* will appear as binary sensors in Home Assistant.
 
-### Number
+### Numbers
 
 Vantage *variables* with numeric types will appear as numbers in Home Assistant.
 
@@ -83,13 +78,17 @@ Vantage *variables* with numeric types will appear as numbers in Home Assistant.
 
 Vantage *variables* with a type of *Text* will appear as text sensors in Home Assistant.
 
-### Sensor
+### Sensors
 
 Certain Vantage dimmer modules have built-in power, current, and temperature sensors. These are created as sensors in Home Assistant, but are not enabled by default to reduce clutter. You can enable them from the Home Assistant UI.
 
+### Covers
+
+Supported Vantage *blinds* and *blind groups* will appear as covers in Home Assistant.
+
 ## Events
 
-This integration will trigger events on the Home Assistant event bus which can be used to trigger automations. You can test events using the [Events developer tools](https://my.home-assistant.io/redirect/developer_events/) page in the Home Assistant UI.
+This integration will fire events on the Home Assistant event bus which can be used to trigger automations. You can test events using the [events developer tools](https://my.home-assistant.io/redirect/developer_events/) page in the Home Assistant UI.
 
 ### vantage_button_pressed
 
