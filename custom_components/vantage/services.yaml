@@ -15,3 +15,21 @@ start_task:
       description: The name of the Vantage task to start.
       selector:
         text:
+
+stop_task:
+  name: Stop task
+  description: Stop a Vantage task.
+  fields:
+    id:
+      name: Task ID
+      description: The ID of the Vantage task to stop.
+      selector:
+        number:
+          min: 1
+          max: 99999
+          mode: box
+    name:
+      name: Task name
+      description: The name of the Vantage task to stop.
+      selector:
+        text:

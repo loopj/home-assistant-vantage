@@ -5,6 +5,7 @@ DOMAIN = "vantage"
 
 # Services
 SERVICE_START_TASK = "start_task"
+SERVICE_STOP_TASK = "stop_task"
 
 # Events
 EVENT_BUTTON_PRESSED = f"{DOMAIN}_button_pressed"
