@@ -4,8 +4,8 @@ from collections.abc import Callable
 from typing import Any, Generic, TypeVar
 
 from aiovantage import Vantage, VantageEvent
+from aiovantage.controllers import BaseController
 from aiovantage.models import SystemObject
-from aiovantage.controllers.base import BaseController
 
 from homeassistant.components.group import Entity
 from homeassistant.config_entries import ConfigEntry

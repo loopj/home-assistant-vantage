@@ -3,8 +3,8 @@
 from typing import Any, TypeVar
 
 from aiovantage import Vantage, VantageEvent
+from aiovantage.controllers import BaseController
 from aiovantage.models import Master, SystemObject
-from aiovantage.controllers.base import BaseController
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
