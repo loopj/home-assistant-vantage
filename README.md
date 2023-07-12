@@ -4,9 +4,18 @@
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
 
+## Table of contents
+
+<!-- START doctoc generated TOC -->
+<!-- END doctoc generated TOC -->
+
+## Features
+
 The features of this integration include:
 
 - Controlling Vantage devices (lights, shades, motion sensors, etc) as Home Assistant entities.
+- Triggering automations based on Vantage keypad button presses.
+- Starting and stopping Vantage tasks from Home Assistant.
 - Automatic Vantage controller discovery (via mDNS).
 - UI-based configuration (config flow).
 - Entity state updated using [Local Push](https://www.home-assistant.io/blog/2016/02/12/classifying-the-internet-of-things/#classifiers).
@@ -25,11 +34,11 @@ If you aren't using the default *administrator* user, ensure that the following 
 
 ### Install via HACS
 
-Add <https://github.com/loopj/hass-vantage> as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/).
+The easiest way to install this integration is by using [HACS](https://hacs.xyz). Once you have HACS installed, simply add <https://github.com/loopj/hass-vantage> as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/), and then restart Home Assistant.
 
 ### Manual Install
 
-Download the [latest release](https://github.com/loopj/hass-vantage/releases/latest/download/vantage.zip) and extract the contents to your Home Assistant `config/custom_components` directory.
+Alternatively, you can download the [latest release](https://github.com/loopj/hass-vantage/releases/latest/download/vantage.zip) and extract the contents to your Home Assistant `config/custom_components` directory.
 
 ## Configuration
 
@@ -45,3 +54,81 @@ If it wasn’t discovered automatically, you can set up a manual integration ent
 - In the bottom right corner, select the [**Add Integration**](https://my.home-assistant.io/redirect/config_flow_start?domain=vantage) button.
 - From the list, select **Vantage InFusion**.
 - Follow the instructions on screen to complete the setup.
+
+## Platforms
+
+### Light
+
+Vantage *loads* and *load groups* will appear as lights in Home Assistant, except for loads labeled as *relays* or *motors* in Design Center. Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will appear as lights in Home Assistant.
+
+### Switch
+
+Vantage *loads* labeled as *relays* will appear as switches in Home Assistant. If you have a relay load that you'd like to show up as a different type of entity, you can use the [Change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
+
+Additionally, Vantage *variables* with a type of *Boolean* will appear as switches in Home Assistant.
+
+### Cover
+
+Vantage *blinds* and *blind groups* will appear as covers in Home Assistant.
+
+### Binary Sensor
+
+Vantage *dry contacts* will appear as binary sensors in Home Assistant.
+
+### Number
+
+Vantage *variables* with numeric types will appear as numbers in Home Assistant.
+
+### Text
+
+Vantage *variables* with a type of *Text* will appear as text sensors in Home Assistant.
+
+### Sensor
+
+Certain Vantage dimmer modules have built-in power, current, and temperature sensors. These are created as sensors in Home Assistant, but are not enabled by default to reduce clutter. You can enable them from the Home Assistant UI.
+
+## Events
+
+This integration will trigger events on the Home Assistant event bus which can be used to trigger automations. You can test events using the [Events developer tools](https://my.home-assistant.io/redirect/developer_events/) page in the Home Assistant UI.
+
+### vantage_button_pressed
+
+This event is fired when a button is pressed on a Vantage keypad. The following is an example of the payload:
+
+```json
+{
+    "button_id": 250,
+    "button_name": "Lights",
+    "button_position": 1,
+    "button_text1": "lights",
+    "button_text2": "",
+    "station_id": 249,
+    "station_name": "Office Keypad"
+}
+```
+
+| Attribute | Description |
+| --- | --- |
+| `button_id` | The Vantage ID of the button that was pressed. |
+| `button_name` | The name of the button that was pressed. |
+| `button_position` | The position on the keypad of the button that was pressed. |
+| `button_text1` | The first line of text on the button that was pressed. |
+| `button_text2` | The second line of text on the button that was pressed. |
+| `station_id` | The Vantage ID of the keypad containing the button that was pressed. |
+| `station_name` | The name of the keypad containing the button that was pressed. |
+
+### vantage_button_released
+
+This event is fired when a button is released on a Vantage keypad. It has the same payload as the `vantage_button_pressed` event.
+
+## Services
+
+This integration exposes the following services which can be called from automations.
+
+### vantage.start_task
+
+You can start a Vantage task by calling the `vantage.start_task` service, with either the Vantage ID of the task, or the task's name.
+
+### vantage.stop_task
+
+You can start a Vantage task by calling the `vantage.start_task` service, with either the Vantage ID of the task, or the task's name.
