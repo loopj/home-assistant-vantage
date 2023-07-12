@@ -3,7 +3,7 @@
 import functools
 
 from aiovantage import Vantage
-from aiovantage.config_client.objects import GMem
+from aiovantage.models import GMem
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry

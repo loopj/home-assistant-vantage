@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.config_client.objects import Load, LoadGroup, RGBLoad
+from aiovantage.models import Load, LoadGroup, RGBLoadBase
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -83,7 +83,7 @@ class VantageLight(VantageEntity[Load], LightEntity):
         await self.client.loads.turn_off(self.obj.id, kwargs.get(ATTR_TRANSITION, 0))
 
 
-class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
+class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
     """Vantage RGB load light entity."""
 
     def __post_init__(self) -> None:
@@ -92,16 +92,16 @@ class VantageRGBLight(VantageEntity[RGBLoad], LightEntity):
 
         self._attr_supported_color_modes: set[str] = set()
         match self.obj.color_type:
-            case RGBLoad.ColorType.HSL:
+            case RGBLoadBase.ColorType.HSL:
                 self._attr_supported_color_modes.add(ColorMode.HS)
                 self._attr_color_mode = ColorMode.HS
-            case RGBLoad.ColorType.RGB:
+            case RGBLoadBase.ColorType.RGB:
                 self._attr_supported_color_modes.add(ColorMode.RGB)
                 self._attr_color_mode = ColorMode.RGB
-            case RGBLoad.ColorType.RGBW:
+            case RGBLoadBase.ColorType.RGBW:
                 self._attr_supported_color_modes.add(ColorMode.RGBW)
                 self._attr_color_mode = ColorMode.RGBW
-            case RGBLoad.ColorType.CCT:
+            case RGBLoadBase.ColorType.CCT:
                 self._attr_supported_color_modes.add(ColorMode.COLOR_TEMP)
                 self._attr_color_mode = ColorMode.COLOR_TEMP
                 self._attr_min_color_temp_kelvin = self.obj.min_temp

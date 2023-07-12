@@ -24,6 +24,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .device import async_setup_devices
 from .entity import async_cleanup_entities
+from .events import async_setup_events
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -38,7 +39,6 @@ PLATFORMS: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
-
     # Create a Vantage client
     vantage = Vantage(
         entry.data[CONF_HOST],
@@ -56,6 +56,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Add Vantage devices (controllers, modules, stations) to the device registry
         async_setup_devices(hass, entry)
+
+        # Generate events for button presses
+        async_setup_events(hass, entry)
 
         # Set up each platform (lights, covers, etc.)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
