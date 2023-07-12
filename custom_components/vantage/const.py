@@ -1,5 +1,11 @@
 """Constants for the Vantage InFusion Controller integration."""
 
+# Domain
 DOMAIN = "vantage"
-SERVICE_START_TASK_BY_ID = "start_task_by_id"
-SERVICE_START_TASK_BY_NAME = "start_task_by_name"
+
+# Services
+SERVICE_START_TASK = "start_task"
+
+# Events
+EVENT_BUTTON_PRESSED = f"{DOMAIN}_button_pressed"
+EVENT_BUTTON_RELEASED = f"{DOMAIN}_button_released"
