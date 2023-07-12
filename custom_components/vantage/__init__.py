@@ -25,6 +25,7 @@ from .const import DOMAIN
 from .device import async_setup_devices
 from .entity import async_cleanup_entities
 from .events import async_setup_events
+from .services import async_register_services
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -53,6 +54,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         # Initialize and fetch all objects
         await vantage.initialize()
+
+        # Register vantage domain services
+        async_register_services(hass)
 
         # Add Vantage devices (controllers, modules, stations) to the device registry
         async_setup_devices(hass, entry)

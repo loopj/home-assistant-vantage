@@ -8,7 +8,7 @@ from aiovantage.models import Button
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, EVENT_BUTTON_PRESSED, EVENT_BUTTON_RELEASED
 
 
 def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -17,7 +17,7 @@ def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     # Subscribe to button events
     def handle_button_event(_event: VantageEvent, obj: Button, data: Any) -> None:
-        """Handle button pressed events."""
+        """Handle button press/release events."""
         if "pressed" not in data["attrs_changed"]:
             return
 
@@ -33,10 +33,10 @@ def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
             payload["station_id"] = station.id
             payload["station_name"] = station.name
 
-        if obj.pressed:
-            hass.bus.async_fire(f"{DOMAIN}_button_pressed", payload)
-        else:
-            hass.bus.async_fire(f"{DOMAIN}_button_released", payload)
+        hass.bus.async_fire(
+            EVENT_BUTTON_PRESSED if obj.pressed else EVENT_BUTTON_RELEASED,
+            payload,
+        )
 
     entry.async_on_unload(
         vantage.buttons.subscribe(
