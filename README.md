@@ -2,6 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/loopj/hass-vantage?style=for-the-badge)](http://github.com/loopj/hass-vantage/releases/latest)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![Discord](https://img.shields.io/discord/1120862286576353370?style=for-the-badge)](https://discord.gg/j6xdqPJJ)
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
 
