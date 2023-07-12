@@ -1,0 +1,24 @@
+start_task_by_id:
+  name: Start task by ID
+  description: Start a Vantage task by ID
+  fields:
+    id:
+      name: Task ID
+      description: The ID of the Vantage task to start
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 99999
+          mode: box
+
+start_task_by_name:
+  name: Start task by name
+  description: Start a Vantage task by name
+  fields:
+    name:
+      name: Task name
+      description: The name of the Vantage task to start
+      required: true
+      selector:
+        text:
