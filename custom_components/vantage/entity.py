@@ -93,7 +93,7 @@ class VantageEntity(Generic[T], Entity):
 
         info = DeviceInfo(
             identifiers={(DOMAIN, str(self.obj.id))},
-            name=self.obj.name,
+            name=self.obj.display_name or self.obj.name,
             manufacturer=self._device_manufacturer,
             model=self._device_model,
         )

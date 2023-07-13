@@ -35,7 +35,7 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
             """Register a Vantage device in the device registry."""
             device_info = DeviceInfo(
                 identifiers={(DOMAIN, str(obj.id))},
-                name=obj.name,
+                name=obj.display_name or obj.name,
                 manufacturer="Vantage",
                 model=obj.model,
             )
