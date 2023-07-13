@@ -1,7 +1,6 @@
 # Vantage InFusion integration for Home Assistant
 
 [![GitHub release](https://img.shields.io/github/v/release/loopj/hass-vantage?style=for-the-badge)](http://github.com/loopj/hass-vantage/releases/latest)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![Discord](https://img.shields.io/discord/1120862286576353370?style=for-the-badge)](https://discord.gg/j6xdqPJJ)
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
@@ -32,7 +31,9 @@ If you aren't using the default *administrator* user, ensure that the following 
 
 ### Install via HACS
 
-The easiest way to install this integration is by using [HACS](https://hacs.xyz). Once you have HACS installed, simply add <https://github.com/loopj/hass-vantage> as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/), and then restart Home Assistant.
+The easiest way to install this integration is by using [HACS](https://hacs.xyz). Once you have HACS installed, simply add <https://github.com/loopj/hass-vantage> as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/), or click the button below. Once installed, restart Home Assistant.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=loopj&repository=hass-vantage&category=integration)
 
 ### Manual Install
 
@@ -40,9 +41,13 @@ Alternatively, you can download the [latest release](https://github.com/loopj/ha
 
 ## Configuration
 
+Adding Vantage to your Home Assistant instance can be done via the user interface, by using this My button:
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=vantage)
+
 ### Auto discovery
 
-Vantage controllers should be auto-discovered by Home Assistant. If an instance was found, it will be shown as **Discovered**. You can then set it up right away.
+Vantage can be auto-discovered by Home Assistant. If an instance was found, it will be shown as **Discovered**. You can then set it up right away.
 
 ### Manual configuration
 
