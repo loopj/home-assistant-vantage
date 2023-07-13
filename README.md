@@ -57,35 +57,35 @@ If it wasn’t discovered automatically, you can set up a manual integration ent
 
 ### Lights
 
-Vantage *loads* and *load groups* will appear as lights in Home Assistant, except for loads labeled as *relays* or *motors* in Design Center.
+Vantage *Load* and *Load Group* objects will appear as lights in Home Assistant, except for loads labeled as *Relay* or *Motor* in Design Center.
 
 Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will appear as lights in Home Assistant.
 
 ### Switches
 
-Vantage *loads* labeled as *relays* will appear as switches in Home Assistant. If you have a relay load that you'd like to show up as a different type of entity, you can use the [Change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
+Vantage *Load* objects labeled as *Relay* will appear as switches in Home Assistant. If you have a relay load that you'd like to show up as a different type of entity, you can use the [Change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
 
-Additionally, Vantage *variables* with a type of *Boolean* will appear as switches in Home Assistant.
+Additionally, Vantage *GMem* objects (variables) with a type of *Boolean* will be created as switched in Home Assistant, but are hidden by default.
 
 ### Binary Sensors
 
-Vantage *dry contacts* will appear as binary sensors in Home Assistant.
+Vantage *DryContact* objects (motion sensors, etc) will appear as binary sensors in Home Assistant.
 
-### Numbers
+### Number Entities
 
-Vantage *variables* with numeric types will appear as numbers in Home Assistant.
+Vantage *GMem* objects (variables) with numeric types will be created as number entities in Home Assistant, but are hidden by default.
 
-### Text
+### Text Entities
 
-Vantage *variables* with a type of *Text* will appear as text sensors in Home Assistant.
+Vantage *GMem* objects (variables) with a type of *Text* will be created as text entities in Home Assistant, but are hidden by default.
 
 ### Sensors
 
-Certain Vantage dimmer modules have built-in power, current, and temperature sensors. These are created as sensors in Home Assistant, but are not enabled by default to reduce clutter. You can enable them from the Home Assistant UI.
+Certain Vantage dimmer modules have built-in power, current, and temperature sensors. These are created as sensors in Home Assistant, but are not enabled by default to reduce clutter. You can enable them from the Home Assistant settings.
 
 ### Covers
 
-Supported Vantage *blinds* and *blind groups* will appear as covers in Home Assistant.
+Supported Vantage *Blind* and *BlindGroup* objects will appear as covers in Home Assistant.
 
 ## Events
 
