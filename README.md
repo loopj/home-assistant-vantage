@@ -136,4 +136,4 @@ You can start a Vantage task by calling the `vantage.start_task` service, with e
 
 ### vantage.stop_task
 
-You can start a Vantage task by calling the `vantage.start_task` service, with either the Vantage ID of the task, or the task's name.
+You can stop a Vantage task by calling the `vantage.stop_task` service, with either the Vantage ID of the task, or the task's name.
