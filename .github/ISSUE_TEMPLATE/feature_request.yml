@@ -32,5 +32,5 @@ body:
       options:
         - label: This only contains 1 feature request (if you have multiple feature requests, open one feature request for each feature request).
           required: true
-        - label: This issue is not a duplicate of [previous feature requests](https://github.com/loopj/hass-vantage/issues?q=label%3Aenhancement).
+        - label: This issue is not a duplicate of [previous feature requests](https://github.com/loopj/home-assistant-vantage/issues?q=label%3Aenhancement).
           required: true

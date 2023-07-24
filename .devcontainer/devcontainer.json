@@ -1,5 +1,5 @@
 {
-    "name": "loopj/hass-vantage",
+    "name": "loopj/home-assistant-vantage",
     "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [

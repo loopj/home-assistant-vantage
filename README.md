@@ -1,6 +1,6 @@
 # Vantage InFusion integration for Home Assistant
 
-[![GitHub release](https://img.shields.io/github/v/release/loopj/hass-vantage?style=for-the-badge)](http://github.com/loopj/hass-vantage/releases/latest)
+[![GitHub release](https://img.shields.io/github/v/release/loopj/home-assistant-vantage?style=for-the-badge)](http://github.com/loopj/home-assistant-vantage/releases/latest)
 [![Discord](https://img.shields.io/discord/1120862286576353370?style=for-the-badge)](https://discord.gg/j6xdqPJJ)
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
@@ -31,13 +31,13 @@ If you aren't using the default *administrator* user, ensure that the following 
 
 ### Install via HACS
 
-The easiest way to install this integration is by using [HACS](https://hacs.xyz). Once you have HACS installed, simply add <https://github.com/loopj/hass-vantage> as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/), or click the button below. Once installed, restart Home Assistant.
+The easiest way to install this integration is by using [HACS](https://hacs.xyz). Once you have HACS installed, simply add <https://github.com/loopj/home-assistant-vantage> as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/), or click the button below. Once installed, restart Home Assistant.
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=loopj&repository=hass-vantage&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=loopj&repository=home-assistant-vantage&category=integration)
 
 ### Manual Install
 
-Alternatively, you can download the [latest release](https://github.com/loopj/hass-vantage/releases/latest/download/vantage.zip) and extract the contents to your Home Assistant `config/custom_components` directory.
+Alternatively, you can download the [latest release](https://github.com/loopj/home-assistant-vantage/releases/latest/download/vantage.zip) and extract the contents to your Home Assistant `config/custom_components` directory.
 
 ## Configuration
 
