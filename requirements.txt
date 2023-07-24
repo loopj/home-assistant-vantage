@@ -1,5 +1,5 @@
 # Home assistant
-homeassistant==2023.7.1
+homeassistant==2023.7.3
 colorlog==6.7.0
 
 # Use a specific version of aiovantage
@@ -10,7 +10,7 @@ aiovantage==0.8.1
 
 # Type stubs
 voluptuous-stubs==0.1.1
-homeassistant-stubs==2023.7.2
+homeassistant-stubs==2023.7.3
 
 # Linting, etc
 black==23.7.0
