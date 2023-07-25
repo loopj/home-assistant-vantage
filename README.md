@@ -100,7 +100,7 @@ Vantage *Load* objects labeled as *Motor* will appear as fans in Home Assistant.
 
 This integration will fire events on the Home Assistant event bus which can be used to trigger automations. You can test events using the [events developer tools](https://my.home-assistant.io/redirect/developer_events/) page in the Home Assistant UI.
 
-### vantage_button_pressed
+### `vantage_button_pressed`
 
 This event is fired when a button is pressed on a Vantage keypad. The following is an example of the payload:
 
@@ -126,18 +126,58 @@ This event is fired when a button is pressed on a Vantage keypad. The following 
 | `station_id` | The Vantage ID of the keypad containing the button that was pressed. |
 | `station_name` | The name of the keypad containing the button that was pressed. |
 
-### vantage_button_released
+### `vantage_button_released`
 
 This event is fired when a button is released on a Vantage keypad. It has the same payload as the `vantage_button_pressed` event.
+
+### `vantage_task_started`
+
+This event is fired when a Vantage task is started. It's worth noting that this event can be fired multiple times for a single button press, since buttons have press, release, and hold actions, and tasks can be configured to start on any of these actions.
+
+The following is an example of the payload:
+
+```json
+{
+    "task_id": 683,
+    "task_name": "Toggle Office Lights"
+}
+```
+
+| Attribute | Description |
+| --- | --- |
+| `task_id` | The Vantage ID of the task that was started. |
+| `task_name` | The name of the task that was started. |
+
+### `vantage_task_stopped`
+
+This event is fired when a Vantage task is stopped. It has the same payload as the `vantage_task_started` event.
+
+### `vantage_task_state_changed`
+
+This event is fired when a Vantage task changes it's LED state. The following is an example of the payload:
+
+```json
+{
+    "task_id": 683,
+    "task_name": "Toggle Office Lights",
+    "task_state": 1
+}
+```
+
+| Attribute | Description |
+| --- | --- |
+| `task_id` | The Vantage ID of the task that changed state. |
+| `task_name` | The name of the task that changed state. |
+| `task_state` | The new LED state of the task. |
 
 ## Services
 
 This integration exposes the following services which can be called from automations.
 
-### vantage.start_task
+### `vantage.start_task`
 
 You can start a Vantage task by calling the `vantage.start_task` service, with either the Vantage ID of the task, or the task's name.
 
-### vantage.stop_task
+### `vantage.stop_task`
 
 You can stop a Vantage task by calling the `vantage.stop_task` service, with either the Vantage ID of the task, or the task's name.
