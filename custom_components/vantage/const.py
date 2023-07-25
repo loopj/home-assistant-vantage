@@ -10,3 +10,6 @@ SERVICE_STOP_TASK = "stop_task"
 # Events
 EVENT_BUTTON_PRESSED = f"{DOMAIN}_button_pressed"
 EVENT_BUTTON_RELEASED = f"{DOMAIN}_button_released"
+EVENT_TASK_STARTED = f"{DOMAIN}_task_started"
+EVENT_TASK_STOPPED = f"{DOMAIN}_task_stopped"
+EVENT_TASK_STATE_CHANGED = f"{DOMAIN}_task_state_changed"
