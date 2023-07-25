@@ -92,6 +92,10 @@ Certain Vantage dimmer modules have built-in power, current, and temperature sen
 
 Supported Vantage *Blind* and *BlindGroup* objects will appear as covers in Home Assistant.
 
+### Fans
+
+Vantage *Load* objects labeled as *Motor* will appear as fans in Home Assistant.
+
 ## Events
 
 This integration will fire events on the Home Assistant event bus which can be used to trigger automations. You can test events using the [events developer tools](https://my.home-assistant.io/redirect/developer_events/) page in the Home Assistant UI.
