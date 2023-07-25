@@ -68,7 +68,7 @@ Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will ap
 
 ### Switches
 
-Vantage *Load* objects labeled as *Relay* will appear as switches in Home Assistant. If you have a relay load that you'd like to show up as a different type of entity, you can use the [change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
+Vantage *Load* objects labeled as *Relay* or *Motor* will appear as switches in Home Assistant. If you have a relay or motor load that you'd like to show up as a different type of entity, you can use the [change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
 
 Additionally, Vantage *GMem* objects (variables) with a type of *Boolean* will be created as switches in Home Assistant, but are hidden by default.
 

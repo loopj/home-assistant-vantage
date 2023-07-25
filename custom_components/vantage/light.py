@@ -48,8 +48,12 @@ class VantageLight(VantageEntity[Load], LightEntity):
         """Initialize the light."""
         self._device_model = f"{self.obj.load_type} Load"
 
+        # Look up the power profile for this load to determine if it is dimmable
+        power_profile = self.client.power_profiles.get(self.obj.power_profile_id)
+
+        # Set up the light based on the power profile
         self._attr_supported_color_modes: set[str] = set()
-        if self.obj.is_dimmable:
+        if power_profile and power_profile.is_dimmable:
             self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
             self._attr_color_mode = ColorMode.BRIGHTNESS
             self._attr_supported_features |= LightEntityFeature.TRANSITION

@@ -12,7 +12,7 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/loopj/home-assistant-vantage/issues",
   "requirements": [
-    "aiovantage==0.9.0"
+    "aiovantage==0.10.0"
   ],
   "version": "0.7.0",
   "zeroconf": [
