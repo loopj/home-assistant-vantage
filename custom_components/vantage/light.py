@@ -234,7 +234,7 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
-        await self.client.loads.turn_on(
+        await self.client.load_groups.turn_on(
             self.obj.id,
             kwargs.get(ATTR_TRANSITION, 0),
             brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
@@ -242,6 +242,6 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
-        await self.client.rgb_loads.turn_off(
+        await self.client.load_groups.turn_off(
             self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
         )
