@@ -6,15 +6,13 @@ from typing import Any
 from aiovantage import Vantage
 from aiovantage.models import Load
 
-from homeassistant.components.fan import FanEntity, FanEntityFeature
+from homeassistant.components.fan import FanEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import VantageEntity, async_register_vantage_objects
-
-SPEED_RANGE = (1, 255)
 
 
 async def async_setup_entry(
@@ -36,20 +34,11 @@ class VantageFan(VantageEntity[Load], FanEntity):
     def __post_init__(self) -> None:
         """Initialize the switch."""
         self._device_model = f"{self.obj.load_type} Load"
-        self._attr_supported_features = FanEntityFeature.SET_SPEED
 
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
         return self.obj.is_on
-
-    @property
-    def percentage(self) -> int | None:
-        """Return the current speed percentage."""
-        if self.obj.level is None:
-            return None
-
-        return round(self.obj.level)
 
     async def async_turn_on(
         self,
@@ -58,12 +47,8 @@ class VantageFan(VantageEntity[Load], FanEntity):
         **kwargs: Any,
     ) -> None:
         """Turn on the fan."""
-        await self.client.loads.turn_on(self.obj.id, level=percentage)
+        await self.client.loads.turn_on(self.obj.id)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the entity off."""
         await self.client.loads.turn_off(self.obj.id)
-
-    async def async_set_percentage(self, percentage: int) -> None:
-        """Set the speed percentage of the fan."""
-        await self.client.loads.set_level(self.obj.id, percentage)
