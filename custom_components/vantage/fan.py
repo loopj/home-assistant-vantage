@@ -49,7 +49,7 @@ class VantageFan(VantageEntity[Load], FanEntity):
         if self.obj.level is None:
             return None
 
-        return self.obj.level
+        return round(self.obj.level)
 
     async def async_turn_on(
         self,
