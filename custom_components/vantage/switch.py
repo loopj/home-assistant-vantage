@@ -25,7 +25,9 @@ async def async_setup_entry(
     )
 
     # Register all switch entities
-    register_items(vantage.loads, VantageLoadSwitch, lambda obj: obj.is_relay)
+    register_items(
+        vantage.loads, VantageLoadSwitch, lambda obj: obj.is_relay or obj.is_motor
+    )
     register_items(vantage.gmem, VantageVariableSwitch, lambda obj: obj.is_bool)
 
 
