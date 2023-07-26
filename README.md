@@ -2,6 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/loopj/home-assistant-vantage?style=for-the-badge)](http://github.com/loopj/home-assistant-vantage/releases/latest)
 [![Discord](https://img.shields.io/discord/1120862286576353370?style=for-the-badge)](https://discord.gg/j6xdqPJJ)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
 
@@ -29,15 +30,19 @@ If you aren't using the default *administrator* user, ensure that the following 
 
 ## Installation
 
-### Install via HACS
+The easiest way to install this integration is by using [HACS](https://hacs.xyz).
 
-The easiest way to install this integration is by using [HACS](https://hacs.xyz). Once you have HACS installed, simply add <https://github.com/loopj/home-assistant-vantage> as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/), or click the button below. Once installed, restart Home Assistant.
+If you have HACS installed, you can add the Vantage integration as a custom repository by using this My button:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=loopj&repository=home-assistant-vantage&category=integration)
 
-### Manual Install
+<details>
+<summary>
+<h4>Manual installation</h4>
+</summary>
 
-Alternatively, you can download the [latest release](https://github.com/loopj/home-assistant-vantage/releases/latest/download/vantage.zip) and extract the contents to your Home Assistant `config/custom_components` directory.
+If you aren't using HACS, you can download the [latest release](https://github.com/loopj/home-assistant-vantage/releases/latest/download/vantage.zip) and extract the contents to your Home Assistant `config/custom_components` directory.
+</details>
 
 ## Configuration
 
