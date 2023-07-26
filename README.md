@@ -45,11 +45,12 @@ Adding Vantage to your Home Assistant instance can be done via the user interfac
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=vantage)
 
-### Auto discovery
-
 Vantage can be auto-discovered by Home Assistant. If an instance was found, it will be shown as **Discovered**. You can then set it up right away.
 
-### Manual configuration
+<details>
+<summary>
+<h4>Manual configuration</h4>
+</summary>
 
 If it wasn’t discovered automatically, you can set up a manual integration entry:
 
@@ -57,6 +58,8 @@ If it wasn’t discovered automatically, you can set up a manual integration ent
 - In the bottom right corner, select the [**Add Integration**](https://my.home-assistant.io/redirect/config_flow_start?domain=vantage) button.
 - From the list, select **Vantage InFusion**.
 - Follow the instructions on screen to complete the setup.
+
+</details>
 
 ## Platforms
 
