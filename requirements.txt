@@ -14,7 +14,7 @@ homeassistant-stubs==2023.7.3
 
 # Linting, etc
 black==23.7.0
-mypy==1.4.1
+mypy==1.5.0
 ruff==0.0.281
 
 # Other
