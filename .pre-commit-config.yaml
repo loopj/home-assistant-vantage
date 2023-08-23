@@ -17,7 +17,7 @@ repos:
         additional_dependencies:
           - aiovantage==0.10.0
           - voluptuous-stubs==0.1.1
-          - homeassistant-stubs==2023.7.3
+          - homeassistant-stubs==2023.8.3
         args: []
 
   - repo: https://github.com/thlorenz/doctoc
