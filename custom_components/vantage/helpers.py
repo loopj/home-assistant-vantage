@@ -35,7 +35,7 @@ def level_to_brightness(level: float) -> int:
 
 def get_object_area(vantage: Vantage, obj: SystemObject) -> Area | None:
     """Get the area for a Vantage object, if it has one."""
-    if isinstance(obj, LocationObject):
+    if isinstance(obj, LocationObject) and obj.area_id is not None:
         return vantage.areas.get(obj.area_id)
 
     return None
