@@ -1,7 +1,16 @@
 """Helper functions for Vantage integration."""
 
+from typing import Protocol, runtime_checkable
+
 from aiovantage import Vantage
-from aiovantage.models import Area, ChildObject, LocationObject, SystemObject
+from aiovantage.models import Area, LocationObject, Parent, SystemObject
+
+
+@runtime_checkable
+class ChildObject(Protocol):
+    """Child object protocol."""
+
+    parent: Parent
 
 
 def scale_color_brightness(
@@ -35,6 +44,6 @@ def get_object_area(vantage: Vantage, obj: SystemObject) -> Area | None:
 def get_object_parent_id(obj: SystemObject) -> int | None:
     """Get the parent id for a Vantage object, if it has one."""
     if isinstance(obj, ChildObject):
-        return obj.parent_id
+        return obj.parent.id
 
     return None

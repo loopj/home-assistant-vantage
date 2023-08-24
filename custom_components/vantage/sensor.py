@@ -49,9 +49,9 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
     def __post_init__(self) -> None:
         """Initialize a Vantage omnisensor."""
         # If this is a module omnisensor, attach it to the module device
-        if self.client.modules.get(self.obj.parent_id) is not None:
+        if self.client.modules.get(self.obj.parent.id) is not None:
             self._attr_name = self.obj.name
-            self._device_id = str(self.obj.parent_id)
+            self._device_id = str(self.obj.parent.id)
             self._attr_entity_registry_enabled_default = False
 
         # Set the device class and unit of measurement based on the sensor type

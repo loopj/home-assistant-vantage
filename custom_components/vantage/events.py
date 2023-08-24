@@ -30,12 +30,12 @@ def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
         payload = {
             "button_id": obj.id,
             "button_name": obj.name,
-            "button_position": obj.parent_position,
+            "button_position": obj.parent.position,
             "button_text1": obj.text1,
             "button_text2": obj.text2,
         }
 
-        if station := vantage.stations.get(obj.parent_id):
+        if station := vantage.stations.get(obj.parent.id):
             payload["station_id"] = station.id
             payload["station_name"] = station.name
 
