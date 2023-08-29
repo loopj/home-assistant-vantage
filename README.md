@@ -19,6 +19,7 @@ The features of this integration include:
 - Entities and devices are automatically synchronized upon restart of Home Assistant when changed in Vantage.
 - Non-blocking I/O, via asyncio and [aiovantage](https://github.com/loopj/aiovantage).
 - Uses SSL connections by default, with automatic reconnection.
+- Works with Vantage InFusion and IC-II controllers running firmware 2.3 and above.
 
 ## Prerequisites
 
