@@ -1,4 +1,6 @@
 """Support for Vantage climate entities."""
+# Ignore type errors until homeassistant.components.climate is typed
+# See home-assistant/core#99301
 # mypy: ignore-errors
 
 import functools
