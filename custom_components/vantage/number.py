@@ -3,7 +3,6 @@
 import functools
 
 from aiovantage import Vantage
-from aiovantage.models import GMem
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
@@ -28,7 +27,7 @@ async def async_setup_entry(
     register_items(vantage.gmem, VantageNumberVariable, lambda obj: obj.is_int)
 
 
-class VantageNumberVariable(VantageVariableEntity[GMem], NumberEntity):
+class VantageNumberVariable(VantageVariableEntity, NumberEntity):
     """Vantage numeric variable number entity."""
 
     def __post_init__(self) -> None:

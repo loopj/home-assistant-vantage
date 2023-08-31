@@ -5,7 +5,7 @@ from typing import Any, Generic, TypeVar
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.models import SystemObject
+from aiovantage.models import GMem, SystemObject
 
 from homeassistant.components.group import Entity
 from homeassistant.config_entries import ConfigEntry
@@ -138,7 +138,7 @@ class VantageEntity(Generic[T], Entity):
         self.async_write_ha_state()
 
 
-class VantageVariableEntity(VantageEntity[T]):
+class VantageVariableEntity(VantageEntity[GMem]):
     """Base class for Vantage Variable entities."""
 
     # Hide variables by default
@@ -158,6 +158,7 @@ class VantageVariableEntity(VantageEntity[T]):
             identifiers={(DOMAIN, f"{self.obj.master_id}:variables")},
             name="Variables",
             manufacturer="Vantage",
+            model="Variables",
             entry_type=dr.DeviceEntryType.SERVICE,
             via_device=(DOMAIN, str(self.obj.master_id)),
         )

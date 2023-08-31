@@ -3,7 +3,6 @@
 import functools
 
 from aiovantage import Vantage
-from aiovantage.models import GMem
 
 from homeassistant.components.text import TextEntity
 from homeassistant.config_entries import ConfigEntry
@@ -29,7 +28,7 @@ async def async_setup_entry(
     register_items(vantage.gmem, VantageTextVariable, lambda obj: obj.is_str)
 
 
-class VantageTextVariable(VantageVariableEntity[GMem], TextEntity):
+class VantageTextVariable(VantageVariableEntity, TextEntity):
     """Vantage text variable text entity."""
 
     @property

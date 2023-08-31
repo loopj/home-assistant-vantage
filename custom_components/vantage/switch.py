@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import GMem, Load
+from aiovantage.models import Load
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -48,7 +48,7 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
         await self.client.loads.turn_off(self.obj.id)
 
 
-class VantageVariableSwitch(VantageVariableEntity[GMem], SwitchEntity):
+class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
     """Vantage boolean variable switch entity."""
 
     @property
