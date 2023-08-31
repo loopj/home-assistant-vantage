@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import GMem, Load
+from aiovantage.models import Load
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity, async_register_vantage_objects
+from .entity import VantageEntity, VantageVariableEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
@@ -34,10 +34,6 @@ async def async_setup_entry(
 class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
     """Vantage relay load switch entity."""
 
-    def __post_init__(self) -> None:
-        """Initialize the switch."""
-        self._device_model = f"{self.obj.load_type} Load"
-
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
@@ -52,15 +48,8 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
         await self.client.loads.turn_off(self.obj.id)
 
 
-class VantageVariableSwitch(VantageEntity[GMem], SwitchEntity):
+class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
     """Vantage boolean variable switch entity."""
-
-    _attr_entity_registry_visible_default = False
-
-    def __post_init__(self) -> None:
-        """Initialize the switch."""
-        self._attr_name = self.obj.name
-        self._device_id = f"{self.obj.master_id}:variables"
 
     @property
     def is_on(self) -> bool | None:

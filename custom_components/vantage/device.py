@@ -1,10 +1,10 @@
 """Support for Vantage devices."""
 
-from typing import Any, TypeVar
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.models import Master, SystemObject
+from aiovantage.models import LocationObject, Master, Parent, SystemObject
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -12,7 +12,6 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
-from .helpers import get_object_area
 
 T = TypeVar("T", bound=SystemObject)
 
@@ -33,24 +32,8 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
         @callback
         def add_device(obj: T) -> dr.DeviceEntry:
             """Register a Vantage device in the device registry."""
-            device_info = DeviceInfo(
-                identifiers={(DOMAIN, str(obj.id))},
-                name=obj.display_name or obj.name,
-                manufacturer="Vantage",
-                model=obj.model,
-            )
-
-            if area := get_object_area(vantage, obj):
-                device_info["suggested_area"] = area.name
-
-            if not isinstance(obj, Master):
-                device_info["via_device"] = (DOMAIN, str(obj.master_id))
-
-            if isinstance(obj, Master):
-                device_info["sw_version"] = obj.firmware_version
-
             return dev_reg.async_get_or_create(
-                config_entry_id=entry.entry_id, **device_info
+                config_entry_id=entry.entry_id, **vantage_device_info(vantage, obj)
             )
 
         @callback
@@ -68,27 +51,63 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
         # Register a callback for new members
         entry.async_on_unload(controller.subscribe(handle_device_event))
 
-    # Register controllers, modules, port devices, and stations
+    # Register "parent" devices (controllers, modules, port devices, and stations)
     register_items(vantage.masters)
     register_items(vantage.modules)
     register_items(vantage.port_devices)
     register_items(vantage.stations)
-
-    # Create virtual devices to hold variables
-    for master in vantage.masters:
-        dev_reg.async_get_or_create(
-            config_entry_id=entry.entry_id,
-            identifiers={(DOMAIN, f"{master.id}:variables")},
-            name="Variables",
-            manufacturer="Vantage",
-            entry_type=dr.DeviceEntryType.SERVICE,
-            via_device=(DOMAIN, str(master.id)),
-        )
 
     # Clean up any devices for objects that no longer exist on the Vantage controller
     for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
         # Device IDs always start with the object ID, followed by an optional suffix
         device_id = next(x[1] for x in device.identifiers if x[0] == DOMAIN)
         vantage_id = int(device_id.split(":")[0])
-        if vantage_id not in vantage.known_ids:
+        if vantage_id not in vantage:
             dev_reg.async_remove_device(device.id)
+
+
+@runtime_checkable
+class ChildObject(Protocol):
+    """Child object protocol."""
+
+    parent: Parent
+
+
+def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
+    """Build the device info for a Vantage object."""
+    device_info = DeviceInfo(
+        identifiers={(DOMAIN, str(obj.id))},
+        name=obj.display_name or obj.name,
+    )
+
+    # Suggest sensible model and manufacturer names
+    parts = obj.vantage_type.split(".", 1)
+    if len(parts) > 1:
+        # Vantage CustomDevice objects take the form "manufacturer.model"
+        device_info["manufacturer"] = parts[0]
+        device_info["model"] = parts[1]
+    else:
+        # Otherwise, assume this is a built-in Vantage object
+        device_info["manufacturer"] = "Vantage"
+        device_info["model"] = parts[0]
+
+    # Suggest an area for LocationObject devices
+    if (
+        isinstance(obj, LocationObject)
+        and obj.area_id
+        and (area := client.areas.get(obj.area_id))
+    ):
+        device_info["suggested_area"] = area.name
+
+    # Set up device relationships
+    if not isinstance(obj, Master):
+        if isinstance(obj, ChildObject) and obj.parent.id in client:
+            device_info["via_device"] = (DOMAIN, str(obj.parent.id))
+        else:
+            device_info["via_device"] = (DOMAIN, str(obj.master_id))
+
+    # Attach the firmware version for Master devices
+    if isinstance(obj, Master):
+        device_info["sw_version"] = obj.firmware_version
+
+    return device_info

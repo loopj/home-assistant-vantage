@@ -30,6 +30,12 @@ async def async_setup_entry(
 class VantageDryContact(VantageEntity[DryContact], BinarySensorEntity):
     """Vantage dry contact binary sensor entity."""
 
+    def __post_init__(self) -> None:
+        """Initialize a Vantage dry contact."""
+        # If this is a thermostat contact, attach it to the thermostat device
+        if parent := self.client.thermostats.get(self.obj.parent.id):
+            self.parent_obj = parent
+
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""

@@ -1,6 +1,5 @@
 """Handle Vantage service calls."""
 
-import logging
 
 from aiovantage import Vantage
 from aiovantage.models import Task
@@ -10,9 +9,7 @@ from homeassistant.const import ATTR_ID, ATTR_NAME
 from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, SERVICE_START_TASK, SERVICE_STOP_TASK
-
-LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN, LOGGER, SERVICE_START_TASK, SERVICE_STOP_TASK
 
 TASK_SCHEMA = vol.All(
     cv.has_at_most_one_key(ATTR_ID, ATTR_NAME),

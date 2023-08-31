@@ -29,6 +29,7 @@ from .services import async_register_services
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.CLIMATE,
     Platform.COVER,
     Platform.LIGHT,
     Platform.NUMBER,

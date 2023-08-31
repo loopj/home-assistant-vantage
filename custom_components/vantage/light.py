@@ -19,11 +19,12 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import VantageEntity, async_register_vantage_objects
-from .helpers import brightness_to_level, level_to_brightness, scale_color_brightness
 
 
 async def async_setup_entry(
@@ -46,8 +47,6 @@ class VantageLight(VantageEntity[Load], LightEntity):
 
     def __post_init__(self) -> None:
         """Initialize the light."""
-        self._device_model = f"{self.obj.load_type} Load"
-
         # Look up the power profile for this load to determine if it is dimmable
         power_profile = self.client.power_profiles.get(self.obj.power_profile_id)
 
@@ -92,8 +91,7 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
 
     def __post_init__(self) -> None:
         """Initialize the light."""
-        self._device_model = "RGB Load"
-
+        # Set up the light based on the color type
         self._attr_supported_color_modes: set[str] = set()
         match self.obj.color_type:
             case RGBLoadBase.ColorType.HSL:
@@ -211,13 +209,20 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
     """Vantage light group entity."""
 
     _attr_icon = "mdi:lightbulb-group"
-    _device_is_service = True
 
     def __post_init__(self) -> None:
         """Initialize a Vantage light group."""
         self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
         self._attr_color_mode = ColorMode.BRIGHTNESS
         self._attr_supported_features |= LightEntityFeature.TRANSITION
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device specific attributes."""
+        device_info = super().device_info
+        device_info["entry_type"] = dr.DeviceEntryType.SERVICE
+
+        return device_info
 
     @property
     def is_on(self) -> bool | None:
@@ -245,3 +250,23 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
         await self.client.load_groups.turn_off(
             self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
         )
+
+
+def scale_color_brightness(
+    color: tuple[int, ...], brightness: int | None
+) -> tuple[int, ...]:
+    """Scale the brightness of an RGB/RGBW color tuple."""
+    if brightness is None:
+        return color
+
+    return tuple(int(round(c * brightness / 255)) for c in color)
+
+
+def brightness_to_level(brightness: int) -> float:
+    """Convert a HA brightness value [0..255] to a Vantage level value [0..100]."""
+    return brightness / 255 * 100
+
+
+def level_to_brightness(level: float) -> int:
+    """Convert a Vantage level value [0..100] to a HA brightness value [0..255]."""
+    return round(level / 100 * 255)
