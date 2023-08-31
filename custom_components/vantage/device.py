@@ -1,17 +1,17 @@
 """Support for Vantage devices."""
 
-from typing import Any, TypeVar
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.models import SystemObject
+from aiovantage.models import LocationObject, Master, Parent, SystemObject
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
-from .helpers import vantage_device_info
 
 T = TypeVar("T", bound=SystemObject)
 
@@ -64,3 +64,50 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
         vantage_id = int(device_id.split(":")[0])
         if vantage_id not in vantage:
             dev_reg.async_remove_device(device.id)
+
+
+@runtime_checkable
+class ChildObject(Protocol):
+    """Child object protocol."""
+
+    parent: Parent
+
+
+def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
+    """Build the device info for a Vantage object."""
+    device_info = DeviceInfo(
+        identifiers={(DOMAIN, str(obj.id))},
+        name=obj.display_name or obj.name,
+    )
+
+    # Suggest sensible model and manufacturer names
+    parts = obj.vantage_type.split(".", 1)
+    if len(parts) > 1:
+        # Vantage CustomDevice objects take the form "manufacturer.model"
+        device_info["manufacturer"] = parts[0]
+        device_info["model"] = parts[1]
+    else:
+        # Otherwise, assume this is a built-in Vantage object
+        device_info["manufacturer"] = "Vantage"
+        device_info["model"] = parts[0]
+
+    # Suggest an area for LocationObject devices
+    if (
+        isinstance(obj, LocationObject)
+        and obj.area_id
+        and (area := client.areas.get(obj.area_id))
+    ):
+        device_info["suggested_area"] = area.name
+
+    # Set up device relationships
+    if not isinstance(obj, Master):
+        if isinstance(obj, ChildObject) and obj.parent.id in client:
+            device_info["via_device"] = (DOMAIN, str(obj.parent.id))
+        else:
+            device_info["via_device"] = (DOMAIN, str(obj.master_id))
+
+    # Attach the firmware version for Master devices
+    if isinstance(obj, Master):
+        device_info["sw_version"] = obj.firmware_version
+
+    return device_info

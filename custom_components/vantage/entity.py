@@ -15,7 +15,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .helpers import vantage_device_info
+from .device import vantage_device_info
 
 T = TypeVar("T", bound=SystemObject)
 

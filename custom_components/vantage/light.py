@@ -25,7 +25,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import VantageEntity, async_register_vantage_objects
-from .helpers import brightness_to_level, level_to_brightness, scale_color_brightness
 
 
 async def async_setup_entry(
@@ -251,3 +250,23 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
         await self.client.load_groups.turn_off(
             self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
         )
+
+
+def scale_color_brightness(
+    color: tuple[int, ...], brightness: int | None
+) -> tuple[int, ...]:
+    """Scale the brightness of an RGB/RGBW color tuple."""
+    if brightness is None:
+        return color
+
+    return tuple(int(round(c * brightness / 255)) for c in color)
+
+
+def brightness_to_level(brightness: int) -> float:
+    """Convert a HA brightness value [0..255] to a Vantage level value [0..100]."""
+    return brightness / 255 * 100
+
+
+def level_to_brightness(level: float) -> int:
+    """Convert a Vantage level value [0..100] to a HA brightness value [0..255]."""
+    return round(level / 100 * 255)
