@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .entity import VantageEntity, async_register_vantage_objects
+from .entity import VantageVariableEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
@@ -29,15 +29,8 @@ async def async_setup_entry(
     register_items(vantage.gmem, VantageTextVariable, lambda obj: obj.is_str)
 
 
-class VantageTextVariable(VantageEntity[GMem], TextEntity):
+class VantageTextVariable(VantageVariableEntity[GMem], TextEntity):
     """Vantage text variable text entity."""
-
-    _attr_entity_registry_visible_default = False
-
-    def __post_init__(self) -> None:
-        """Initialize a Vantage text variable."""
-        self._attr_name = self.obj.name
-        self._device_id = f"{self.obj.master_id}:variables"
 
     @property
     def native_value(self) -> str | None:

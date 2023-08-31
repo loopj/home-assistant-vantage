@@ -19,6 +19,7 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -46,7 +47,8 @@ class VantageLight(VantageEntity[Load], LightEntity):
 
     def __post_init__(self) -> None:
         """Initialize the light."""
-        self._device_model = f"{self.obj.load_type} Load"
+        if self._attr_device_info:
+            self._attr_device_info["model"] = f"{self.obj.load_type} Load"
 
         # Look up the power profile for this load to determine if it is dimmable
         power_profile = self.client.power_profiles.get(self.obj.power_profile_id)
@@ -92,7 +94,8 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
 
     def __post_init__(self) -> None:
         """Initialize the light."""
-        self._device_model = "RGB Load"
+        if self._attr_device_info:
+            self._attr_device_info["model"] = "RGB Load"
 
         self._attr_supported_color_modes: set[str] = set()
         match self.obj.color_type:
@@ -211,13 +214,16 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
     """Vantage light group entity."""
 
     _attr_icon = "mdi:lightbulb-group"
-    _device_is_service = True
 
     def __post_init__(self) -> None:
         """Initialize a Vantage light group."""
         self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
         self._attr_color_mode = ColorMode.BRIGHTNESS
         self._attr_supported_features |= LightEntityFeature.TRANSITION
+
+        # Light groups are service devices
+        if self._attr_device_info:
+            self._attr_device_info["entry_type"] = dr.DeviceEntryType.SERVICE
 
     @property
     def is_on(self) -> bool | None:

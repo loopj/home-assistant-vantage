@@ -3,7 +3,11 @@
 from typing import Protocol, runtime_checkable
 
 from aiovantage import Vantage
-from aiovantage.models import Area, LocationObject, Parent, SystemObject
+from aiovantage.models import LocationObject, Master, Parent, SystemObject
+
+from homeassistant.helpers.entity import DeviceInfo
+
+from .const import DOMAIN
 
 
 @runtime_checkable
@@ -33,17 +37,32 @@ def level_to_brightness(level: float) -> int:
     return round(level / 100 * 255)
 
 
-def get_object_area(vantage: Vantage, obj: SystemObject) -> Area | None:
-    """Get the area for a Vantage object, if it has one."""
-    if isinstance(obj, LocationObject) and obj.area_id is not None:
-        return vantage.areas.get(obj.area_id)
+def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
+    """Build the device info for a Vantage object."""
+    device_info = DeviceInfo(
+        identifiers={(DOMAIN, str(obj.id))},
+        name=obj.display_name or obj.name,
+        manufacturer="Vantage",
+        model=obj.model,
+    )
 
-    return None
+    # Suggest an area for LocationObject devices
+    if (
+        isinstance(obj, LocationObject)
+        and obj.area_id
+        and (area := client.areas.get(obj.area_id))
+    ):
+        device_info["suggested_area"] = area.name
 
+    # Set up device relationships
+    if not isinstance(obj, Master):
+        if isinstance(obj, ChildObject) and obj.parent.id in client:
+            device_info["via_device"] = (DOMAIN, str(obj.parent.id))
+        else:
+            device_info["via_device"] = (DOMAIN, str(obj.master_id))
 
-def get_object_parent_id(obj: SystemObject) -> int | None:
-    """Get the parent id for a Vantage object, if it has one."""
-    if isinstance(obj, ChildObject):
-        return obj.parent.id
+    # Attach the firmware version for Master devices
+    if isinstance(obj, Master):
+        device_info["sw_version"] = obj.firmware_version
 
-    return None
+    return device_info
