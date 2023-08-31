@@ -1,28 +1,30 @@
 """Support for Vantage sensor entities."""
 
 import contextlib
-from datetime import date, datetime
 from decimal import Decimal
 import functools
 import socket
 
 from aiovantage import Vantage
-from aiovantage.models import Master, OmniSensor, Temperature
+from aiovantage.models import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    LIGHT_LUX,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfPower,
+    UnitOfSpeed,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 
 from .const import DOMAIN
 from .entity import VantageEntity, async_register_vantage_objects
+
+FOOT_CANDLES_TO_LUX = 10.7639
 
 
 async def async_setup_entry(
@@ -36,13 +38,15 @@ async def async_setup_entry(
 
     # Register all sensor entities
     register_items(vantage.temperature_sensors, VantageTemperatureSensor)
+    register_items(vantage.anemo_sensors, VantageWindSensor)
+    register_items(vantage.light_sensors, VantageLightSensor)
     register_items(vantage.omni_sensors, VantageOmniSensor)
     register_items(vantage.masters, VantageMasterSerial)
     register_items(vantage.masters, VantageMasterIP)
 
 
 class VantageTemperatureSensor(VantageEntity[Temperature], SensorEntity):
-    """Vantage temperature sensory entity."""
+    """Vantage temperature sensor entity."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -55,24 +59,61 @@ class VantageTemperatureSensor(VantageEntity[Temperature], SensorEntity):
             self.parent_obj = parent
 
     @property
-    def native_value(self) -> StateType | date | datetime | Decimal:
+    def native_value(self) -> Decimal | None:
         """Return the value reported by the sensor."""
         return self.obj.value
 
 
+class VantageWindSensor(VantageEntity[AnemoSensor], SensorEntity):
+    """Vantage wind sensor entity."""
+
+    _attr_device_class = SensorDeviceClass.WIND_SPEED
+    _attr_native_unit_of_measurement = UnitOfSpeed.MILES_PER_HOUR
+    _attr_should_poll = True
+    _attr_state_class = "measurement"
+
+    @property
+    def native_value(self) -> Decimal | None:
+        """Return the value reported by the sensor."""
+        return self.obj.speed
+
+    async def async_update(self) -> None:
+        """Update the state of the sensor."""
+        self.obj.speed = await self.client.anemo_sensors.get_speed(self.obj.id)
+
+
+class VantageLightSensor(VantageEntity[LightSensor], SensorEntity):
+    """Vantage light sensor entity."""
+
+    _attr_device_class = SensorDeviceClass.ILLUMINANCE
+    _attr_native_unit_of_measurement = LIGHT_LUX
+    _attr_should_poll = True
+    _attr_state_class = "measurement"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the value reported by the sensor."""
+        if self.obj.level is None:
+            return None
+
+        return float(self.obj.level) * FOOT_CANDLES_TO_LUX
+
+    async def async_update(self) -> None:
+        """Update the state of the sensor."""
+        self.obj.level = await self.client.light_sensors.get_level(self.obj.id)
+
+
 class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
-    """Vantage 'OmniSensor' sensory entity."""
+    """Vantage 'OmniSensor' sensor entity."""
 
     _attr_should_poll = True
     _attr_state_class = "measurement"
 
     def __post_init__(self) -> None:
         """Initialize a Vantage omnisensor."""
-        # If this is a module omnisensor, attach it to the module device
+        # If this is a module omnisensor, attach it to the module device and disable by default
         if parent := self.client.modules.get(self.obj.parent.id):
             self.parent_obj = parent
-
-            # Disable module sensors by default, since they are noisy
             self._attr_entity_registry_enabled_default = False
 
         # Set the device class and unit of measurement based on the sensor type
@@ -89,13 +130,13 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
     @property
-    def native_value(self) -> StateType | date | datetime | Decimal:
+    def native_value(self) -> int | Decimal | None:
         """Return the value reported by the sensor."""
         return self.obj.level
 
     async def async_update(self) -> None:
         """Update the state of the sensor."""
-        await self.client.omni_sensors.get_level(self.obj.id)
+        self.obj.level = await self.client.omni_sensors.get_level(self.obj.id)
 
 
 class VantageMasterSerial(VantageEntity[Master], SensorEntity):
