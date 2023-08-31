@@ -67,6 +67,10 @@ async def async_setup_entry(
 class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
     """Vantage blind cover entity."""
 
+    _attr_max_temp = VANTAGE_MAX_TEMP
+    _attr_min_temp = VANTAGE_MIN_TEMP
+    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+
     def __post_init__(self) -> None:
         """Initialize a Vantage Cover."""
 
@@ -77,14 +81,16 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
         self.heat_setpoint = self.sensors.get(setpoint=Temperature.Setpoint.HEAT)
 
         # Set up the entity attributes
-        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
-        self._attr_fan_modes = [FAN_AUTO, FAN_ON]
-
         self._attr_supported_features = (
             ClimateEntityFeature.FAN_MODE
             | ClimateEntityFeature.TARGET_TEMPERATURE
             | ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
         )
+
+        self._attr_fan_modes = [
+            FAN_AUTO,
+            FAN_ON,
+        ]
 
         self._attr_hvac_modes = [
             HVACMode.HEAT_COOL,
@@ -92,9 +98,6 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             HVACMode.HEAT,
             HVACMode.OFF,
         ]
-
-        self._attr_min_temp = VANTAGE_MIN_TEMP
-        self._attr_max_temp = VANTAGE_MAX_TEMP
 
     async def async_added_to_hass(self) -> None:
         """Register callbacks."""
