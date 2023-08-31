@@ -23,7 +23,6 @@ from homeassistant.helpers.typing import StateType
 
 from .const import DOMAIN
 from .entity import VantageEntity, async_register_vantage_objects
-from .helpers import vantage_device_info
 
 
 async def async_setup_entry(
@@ -45,18 +44,15 @@ async def async_setup_entry(
 class VantageTemperatureSensor(VantageEntity[Temperature], SensorEntity):
     """Vantage temperature sensory entity."""
 
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = "measurement"
 
     def __post_init__(self) -> None:
         """Initialize a Vantage temperature sensor."""
         # If this is a thermostat temperature sensor, attach it to the thermostat device
         if parent := self.client.thermostats.get(self.obj.parent.id):
-            self._attr_name = self.obj.name
-            self._attr_device_info = vantage_device_info(self.client, parent)
-
-        # Set the device class and unit of measurement
-        self._attr_device_class = SensorDeviceClass.TEMPERATURE
-        self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+            self.parent_obj = parent
 
     @property
     def native_value(self) -> StateType | date | datetime | Decimal:
@@ -74,8 +70,7 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
         """Initialize a Vantage omnisensor."""
         # If this is a module omnisensor, attach it to the module device
         if parent := self.client.modules.get(self.obj.parent.id):
-            self._attr_name = self.obj.name
-            self._attr_device_info = vantage_device_info(self.client, parent)
+            self.parent_obj = parent
 
             # Disable module sensors by default, since they are noisy
             self._attr_entity_registry_enabled_default = False
@@ -108,7 +103,11 @@ class VantageMasterSerial(VantageEntity[Master], SensorEntity):
 
     _attr_icon = "mdi:barcode"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_name = "Serial Number"
+
+    @property
+    def name(self) -> str | None:
+        """Return the name of the entity."""
+        return "Serial Number"
 
     def __post_init__(self) -> None:
         """Initialize a Vantage master serial number."""
@@ -121,7 +120,11 @@ class VantageMasterIP(VantageEntity[Master], SensorEntity):
 
     _attr_icon = "mdi:ip"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_name = "IP Address"
+
+    @property
+    def name(self) -> str | None:
+        """Return the name of the entity."""
+        return "IP Address"
 
     def __post_init__(self) -> None:
         """Initialize a Vantage master IP address."""

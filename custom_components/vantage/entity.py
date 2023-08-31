@@ -62,7 +62,6 @@ class VantageEntity(Generic[T], Entity):
     """Base class for Vantage entities."""
 
     _attr_should_poll = False
-    _attr_name: str | None = None
     _attr_has_entity_name = True
 
     def __init__(self, client: Vantage, controller: BaseController[T], obj: T):
@@ -70,14 +69,30 @@ class VantageEntity(Generic[T], Entity):
         self.client = client
         self.controller = controller
         self.obj = obj
+        self.parent_obj: SystemObject | None = None
 
-        self._attr_device_info = vantage_device_info(client, obj)
         self._attr_unique_id = str(obj.id)
 
         self.__post_init__()
 
     def __post_init__(self) -> None:
         """Run after entity is initialized."""
+
+    @property
+    def name(self) -> str | None:
+        """Return the name of the entity."""
+        if self.parent_obj:
+            return self.obj.name
+
+        return None
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device specific attributes."""
+        if self.parent_obj:
+            return vantage_device_info(self.client, self.parent_obj)
+
+        return vantage_device_info(self.client, self.obj)
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -129,13 +144,17 @@ class VantageVariableEntity(VantageEntity[T]):
     # Hide variables by default
     _attr_entity_registry_visible_default = False
 
-    def __init__(self, client: Vantage, controller: BaseController[T], obj: T):
-        """Initialize a Vantage variable entity."""
-        super().__init__(client, controller, obj)
+    @property
+    def name(self) -> str:
+        """Return the name of the entity."""
+        return self.obj.name
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device specific attributes."""
 
         # Attach variable entities to a "variables" virtual device
-        self._attr_name = self.obj.name
-        self._attr_device_info = DeviceInfo(
+        return DeviceInfo(
             identifiers={(DOMAIN, f"{self.obj.master_id}:variables")},
             name="Variables",
             manufacturer="Vantage",

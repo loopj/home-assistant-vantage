@@ -12,7 +12,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import VantageEntity, async_register_vantage_objects
-from .helpers import vantage_device_info
 
 
 async def async_setup_entry(
@@ -35,8 +34,7 @@ class VantageDryContact(VantageEntity[DryContact], BinarySensorEntity):
         """Initialize a Vantage dry contact."""
         # If this is a thermostat contact, attach it to the thermostat device
         if parent := self.client.thermostats.get(self.obj.parent.id):
-            self._attr_name = self.obj.name
-            self._attr_device_info = vantage_device_info(self.client, parent)
+            self.parent_obj = parent
 
     @property
     def is_on(self) -> bool | None:

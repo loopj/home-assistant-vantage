@@ -34,11 +34,6 @@ async def async_setup_entry(
 class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
     """Vantage relay load switch entity."""
 
-    def __post_init__(self) -> None:
-        """Initialize the switch."""
-        if self._attr_device_info:
-            self._attr_device_info["model"] = f"{self.obj.load_type} Load"
-
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
