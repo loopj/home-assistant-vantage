@@ -81,9 +81,23 @@ Vantage *Load* objects labeled as *Relay* or *Motor* will appear as switches in 
 
 Additionally, Vantage *GMem* objects (variables) with a type of *Boolean* will be created as switches in Home Assistant, but are hidden by default.
 
+### Climate
+
+Vantage *Thermostat* objects will appear as climate devices in Home Assistant.
+
+### Covers
+
+Supported Vantage *Blind* and *BlindGroup* objects will appear as covers in Home Assistant.
+
 ### Binary Sensors
 
 Vantage *DryContact* objects (motion sensors, etc) will appear as binary sensors in Home Assistant.
+
+### Sensors
+
+Vantage *AnemoSensor* (wind speed), *LightSensor*, *Temperature*, and *OmniSensor* objects will appear as sensors in Home Assistant.
+
+Certain Vantage dimmer modules have built-in power, current, and temperature sensors exposed as *OmniSensor* objects. These are created as sensors in Home Assistant, but are not enabled by default to reduce clutter. You can enable them from the Home Assistant settings.
 
 ### Number Entities
 
@@ -92,14 +106,6 @@ Vantage *GMem* objects (variables) with numeric types will be created as number 
 ### Text Entities
 
 Vantage *GMem* objects (variables) with a type of *Text* will be created as text entities in Home Assistant, but are hidden by default.
-
-### Sensors
-
-Certain Vantage dimmer modules have built-in power, current, and temperature sensors. These are created as sensors in Home Assistant, but are not enabled by default to reduce clutter. You can enable them from the Home Assistant settings.
-
-### Covers
-
-Supported Vantage *Blind* and *BlindGroup* objects will appear as covers in Home Assistant.
 
 ## Events
 
