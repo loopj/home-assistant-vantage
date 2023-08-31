@@ -79,15 +79,13 @@ Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will ap
 
 Vantage *Load* objects labeled as *Relay* or *Motor* will appear as switches in Home Assistant. If you have a relay or motor load that you'd like to show up as a different type of entity, you can use the [change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
 
-Additionally, Vantage *GMem* objects (variables) with a type of *Boolean* will be created as switches in Home Assistant, but are hidden by default.
-
 ### Climate
 
 Vantage *Thermostat* objects will appear as climate devices in Home Assistant.
 
 ### Covers
 
-Supported Vantage *Blind* and *BlindGroup* objects will appear as covers in Home Assistant.
+Supported Vantage *Blind* and *BlindGroup* objects will appear as covers in Home Assistant. Currently the following blind types are supported *QISBlind*, *QubeBlind*, *RelayBlind*, *Somfy.RS-485*, and *Somfy.URTSI_2*.
 
 ### Binary Sensors
 
@@ -99,13 +97,11 @@ Vantage *AnemoSensor* (wind speed), *LightSensor*, *Temperature*, and *OmniSenso
 
 Certain Vantage dimmer modules have built-in power, current, and temperature sensors exposed as *OmniSensor* objects. These are created as sensors in Home Assistant, but are not enabled by default to reduce clutter. You can enable them from the Home Assistant settings.
 
-### Number Entities
+### Other Entities
 
-Vantage *GMem* objects (variables) with numeric types will be created as number entities in Home Assistant, but are hidden by default.
+Vantage *GMem* objects (variables) will be created as entities in Home Assistant, but are hidden by default.
 
-### Text Entities
-
-Vantage *GMem* objects (variables) with a type of *Text* will be created as text entities in Home Assistant, but are hidden by default.
+Variables with numeric types will be created as number entities, variables with a type of *Boolean* will be created as binary sensor entities, and variables with a type of *Text* will be created as text entities.
 
 ## Events
 
