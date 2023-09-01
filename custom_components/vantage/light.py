@@ -4,6 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
+from aiovantage.errors import ClientError
 from aiovantage.models import Load, LoadGroup, RGBLoadBase
 
 from homeassistant.components.light import (
@@ -19,6 +20,7 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -75,15 +77,27 @@ class VantageLight(VantageEntity[Load], LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
-        await self.client.loads.turn_on(
-            self.obj.id,
-            kwargs.get(ATTR_TRANSITION, 0),
-            brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
-        )
+        try:
+            await self.client.loads.turn_on(
+                self.obj.id,
+                kwargs.get(ATTR_TRANSITION, 0),
+                brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
+            )
+        except ClientError as err:
+            raise HomeAssistantError(
+                f"Turning light {self.obj.name} on failed with error: {err}"
+            ) from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
-        await self.client.loads.turn_off(self.obj.id, kwargs.get(ATTR_TRANSITION, 0))
+        try:
+            await self.client.loads.turn_off(
+                self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
+            )
+        except ClientError as err:
+            raise HomeAssistantError(
+                f"Turning light {self.obj.name} off failed with error: {err}"
+            ) from err
 
 
 class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
@@ -160,7 +174,14 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
                 kwargs[ATTR_RGBW_COLOR], kwargs.get(ATTR_BRIGHTNESS)
             )
 
-            await self.client.rgb_loads.set_rgbw(self.obj.id, red, green, blue, white)
+            try:
+                await self.client.rgb_loads.set_rgbw(
+                    self.obj.id, red, green, blue, white
+                )
+            except ClientError as err:
+                raise HomeAssistantError(
+                    f"Turning light {self.obj.name} on failed with error: {err}"
+                ) from err
 
         elif ATTR_RGB_COLOR in kwargs:
             # Turn on the light with the provided RGB color, scaling brightness if provided
@@ -168,41 +189,67 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
                 kwargs[ATTR_RGB_COLOR], kwargs.get(ATTR_BRIGHTNESS)
             )
 
-            await self.client.rgb_loads.dissolve_rgb(
-                self.obj.id, red, green, blue, kwargs.get(ATTR_TRANSITION, 0)
-            )
+            try:
+                await self.client.rgb_loads.dissolve_rgb(
+                    self.obj.id, red, green, blue, kwargs.get(ATTR_TRANSITION, 0)
+                )
+            except ClientError as err:
+                raise HomeAssistantError(
+                    f"Turning light {self.obj.name} on failed with error: {err}"
+                ) from err
 
         elif ATTR_HS_COLOR in kwargs:
             # Turn on the light with the provided HS color and brightness
             hs_color: tuple[float, float] = kwargs[ATTR_HS_COLOR]
 
-            await self.client.rgb_loads.dissolve_hsl(
-                self.obj.id,
-                hs_color[0],
-                hs_color[1],
-                brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
-                kwargs.get(ATTR_TRANSITION, 0),
-            )
+            try:
+                await self.client.rgb_loads.dissolve_hsl(
+                    self.obj.id,
+                    hs_color[0],
+                    hs_color[1],
+                    brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
+                    kwargs.get(ATTR_TRANSITION, 0),
+                )
+            except ClientError as err:
+                raise HomeAssistantError(
+                    f"Turning light {self.obj.name} on failed with error: {err}"
+                ) from err
 
         else:
             # Set the color temperature, if provided
             if ATTR_COLOR_TEMP_KELVIN in kwargs:
                 color_temp = kwargs[ATTR_COLOR_TEMP_KELVIN]
-                await self.client.rgb_loads.set_color_temp(self.obj.id, color_temp)
+
+                try:
+                    await self.client.rgb_loads.set_color_temp(self.obj.id, color_temp)
+                except ClientError as err:
+                    raise HomeAssistantError(
+                        f"Turning light {self.obj.name} on failed with error: {err}"
+                    ) from err
 
             # Turn on light with previous settings if no color is specified
             else:
-                await self.client.rgb_loads.turn_on(
-                    self.obj.id,
-                    kwargs.get(ATTR_TRANSITION, 0),
-                    brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
-                )
+                try:
+                    await self.client.rgb_loads.turn_on(
+                        self.obj.id,
+                        kwargs.get(ATTR_TRANSITION, 0),
+                        brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
+                    )
+                except ClientError as err:
+                    raise HomeAssistantError(
+                        f"Turning light {self.obj.name} on failed with error: {err}"
+                    ) from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
-        await self.client.rgb_loads.turn_off(
-            self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
-        )
+        try:
+            await self.client.rgb_loads.turn_off(
+                self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
+            )
+        except ClientError as err:
+            raise HomeAssistantError(
+                f"Turning light {self.obj.name} off failed with error: {err}"
+            ) from err
 
 
 class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
@@ -217,10 +264,12 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
         self._attr_supported_features |= LightEntityFeature.TRANSITION
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device specific attributes."""
         device_info = super().device_info
-        device_info["entry_type"] = dr.DeviceEntryType.SERVICE
+
+        if device_info:
+            device_info["entry_type"] = dr.DeviceEntryType.SERVICE
 
         return device_info
 
@@ -239,17 +288,27 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
-        await self.client.load_groups.turn_on(
-            self.obj.id,
-            kwargs.get(ATTR_TRANSITION, 0),
-            brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
-        )
+        try:
+            await self.client.load_groups.turn_on(
+                self.obj.id,
+                kwargs.get(ATTR_TRANSITION, 0),
+                brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255)),
+            )
+        except ClientError as err:
+            raise HomeAssistantError(
+                f"Turning light group {self.obj.name} on failed with error: {err}"
+            ) from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
-        await self.client.load_groups.turn_off(
-            self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
-        )
+        try:
+            await self.client.load_groups.turn_off(
+                self.obj.id, kwargs.get(ATTR_TRANSITION, 0)
+            )
+        except ClientError as err:
+            raise HomeAssistantError(
+                f"Turning light group {self.obj.name} off failed with error: {err}"
+            ) from err
 
 
 def scale_color_brightness(

@@ -3,11 +3,13 @@
 import functools
 
 from aiovantage import Vantage
+from aiovantage.errors import ClientError
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -88,4 +90,9 @@ class VantageNumberVariable(VantageVariableEntity, NumberEntity):
         else:
             value = int(value)
 
-        await self.client.gmem.set_value(self.obj.id, value)
+        try:
+            await self.client.gmem.set_value(self.obj.id, value)
+        except ClientError as err:
+            raise HomeAssistantError(
+                f"Setting variable {self.obj.name} value failed with error: {err}"
+            ) from err

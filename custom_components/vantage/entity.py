@@ -87,7 +87,7 @@ class VantageEntity(Generic[T], Entity):
         return None
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device specific attributes."""
         if self.parent_obj:
             return vantage_device_info(self.client, self.parent_obj)
@@ -150,7 +150,7 @@ class VantageVariableEntity(VantageEntity[GMem]):
         return self.obj.name
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device specific attributes."""
 
         # Attach variable entities to a "variables" virtual device
