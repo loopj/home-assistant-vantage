@@ -71,14 +71,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Clean up any orphaned entities
         async_cleanup_entities(hass, entry)
 
-    except (LoginRequiredError, LoginFailedError) as err:
+    except (LoginFailedError, LoginRequiredError) as err:
         # Handle expired or invalid credentials. This will prompt the user to
         # reconfigure the integration.
         raise ConfigEntryAuthFailed from err
 
     except ClientConnectionError as err:
-        # Handle offline or unavailable devices and services. Home Assistant will
-        # automatically put the config entry in a failure state and start a reauth flow.
+        # Handle connection errors. Home Assistant will automatically take care of
+        # retrying set up later.
         raise ConfigEntryNotReady from err
 
     return True

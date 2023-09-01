@@ -5,7 +5,11 @@ from typing import Any, Generic, TypeVar
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.errors import ClientError
+from aiovantage.errors import (
+    ClientConnectionError,
+    LoginFailedError,
+    LoginRequiredError,
+)
 from aiovantage.models import GMem, SystemObject
 
 from homeassistant.components.group import Entity
@@ -104,6 +108,19 @@ class VantageEntity(Generic[SystemObjectT], Entity):
 
         return vantage_device_info(self.client, self.obj)
 
+    async def async_request_call(self, coro: Coroutine[Any, Any, T]) -> T:
+        """Send a request to the Vantage controller."""
+        try:
+            return await coro
+        except (LoginFailedError, LoginRequiredError) as err:
+            # Handle expired or invalid credentials. This will prompt the user to
+            # reconfigure the integration.
+            self.config_entry.async_start_reauth(self.hass)
+            raise HomeAssistantError(f"Request failed with error: {err}") from err
+        except ClientConnectionError as err:
+            # Handle connection errors.
+            raise HomeAssistantError(f"Request failed with error: {err}") from err
+
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
         self.async_on_remove(
@@ -113,13 +130,6 @@ class VantageEntity(Generic[SystemObjectT], Entity):
                 (VantageEvent.OBJECT_UPDATED, VantageEvent.OBJECT_DELETED),
             )
         )
-
-    async def async_request_call(self, coro: Coroutine[Any, Any, T]) -> T:
-        """Send a request to the Vantage controller."""
-        try:
-            return await coro
-        except ClientError as err:
-            raise HomeAssistantError(f"Request failed with error: {err}") from err
 
     @callback
     def _handle_event(

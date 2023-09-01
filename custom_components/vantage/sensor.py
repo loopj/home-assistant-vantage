@@ -79,7 +79,9 @@ class VantageWindSensor(VantageEntity[AnemoSensor], SensorEntity):
 
     async def async_update(self) -> None:
         """Update the state of the sensor."""
-        self.obj.speed = await self.client.anemo_sensors.get_speed(self.obj.id)
+        self.obj.speed = await self.async_request_call(
+            self.client.anemo_sensors.get_speed(self.obj.id)
+        )
 
 
 class VantageLightSensor(VantageEntity[LightSensor], SensorEntity):
@@ -100,7 +102,9 @@ class VantageLightSensor(VantageEntity[LightSensor], SensorEntity):
 
     async def async_update(self) -> None:
         """Update the state of the sensor."""
-        self.obj.level = await self.client.light_sensors.get_level(self.obj.id)
+        self.obj.level = await self.async_request_call(
+            self.client.light_sensors.get_level(self.obj.id)
+        )
 
 
 class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
@@ -136,7 +140,9 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
 
     async def async_update(self) -> None:
         """Update the state of the sensor."""
-        self.obj.level = await self.client.omni_sensors.get_level(self.obj.id)
+        self.obj.level = await self.async_request_call(
+            self.client.omni_sensors.get_level(self.obj.id)
+        )
 
 
 class VantageMasterSerial(VantageEntity[Master], SensorEntity):
