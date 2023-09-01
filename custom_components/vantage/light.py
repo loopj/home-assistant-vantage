@@ -26,6 +26,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN, LOGGER
 from .entity import VantageEntity, async_register_vantage_objects
 
+# TypeVar for RGB/RGBW color tuples
+ColorT = TypeVar("ColorT", tuple[int, int, int], tuple[int, int, int, int])
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -282,15 +285,12 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
         )
 
 
-T = TypeVar("T", tuple[int, int, int], tuple[int, int, int, int])
-
-
-def scale_color_brightness(color: T, brightness: int) -> T:
+def scale_color_brightness(color: ColorT, brightness: int) -> ColorT:
     """Scale the brightness of an RGB/RGBW color tuple."""
     if brightness is None:
         return color
 
-    return cast(T, tuple(int(round(c * brightness / 255)) for c in color))
+    return cast(ColorT, tuple(int(round(c * brightness / 255)) for c in color))
 
 
 def brightness_to_level(brightness: int) -> float:

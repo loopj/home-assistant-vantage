@@ -23,33 +23,36 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .device import vantage_device_info
 
-T = TypeVar("T")
+# TypeVar for a SystemObject or subclass
 SystemObjectT = TypeVar("SystemObjectT", bound=SystemObject)
+
+# TypeVar for async_request_call
+T = TypeVar("T")
 
 
 def async_register_vantage_objects(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-    controller: BaseController[SystemObjectT],
-    entity_class: type["VantageEntity[SystemObjectT]"],
+    controller: BaseController[Any],
+    entity_class: type["VantageEntity[Any]"],
     object_filter: Callable[[SystemObjectT], bool] | None = None,
 ) -> None:
     """Add entities to HA from a Vantage controller, add a callback for new entities."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
 
     # Add all current objects in the controller that match the filter
     objects = controller.filter(object_filter) if object_filter else controller
-    entities = [entity_class(vantage, entry, controller, obj) for obj in objects]
+    entities = [entity_class(vantage, config_entry, controller, obj) for obj in objects]
     async_add_entities(entities)
 
     # Register a callback for objects added to this controller that match the filter
     @callback
     def async_add_entity(_type: VantageEvent, obj: SystemObjectT, _data: Any) -> None:
         if object_filter is None or object_filter(obj):
-            async_add_entities([entity_class(vantage, entry, controller, obj)])
+            async_add_entities([entity_class(vantage, config_entry, controller, obj)])
 
-    entry.async_on_unload(
+    config_entry.async_on_unload(
         controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
     )
 
@@ -75,7 +78,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
         self,
         client: Vantage,
         config_entry: ConfigEntry,
-        controller: BaseController[SystemObjectT],
+        controller: BaseController[Any],
         obj: SystemObjectT,
     ):
         """Initialize a generic Vantage entity."""
