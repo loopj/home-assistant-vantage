@@ -4,13 +4,11 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.errors import ClientError
 from aiovantage.models import Load
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -43,21 +41,11 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        try:
-            await self.client.loads.turn_on(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Turning {self.obj.name} on failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.loads.turn_on(self.obj.id))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        try:
-            await self.client.loads.turn_off(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Turning {self.obj.name} off failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.loads.turn_off(self.obj.id))
 
 
 class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
@@ -73,18 +61,8 @@ class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        try:
-            await self.client.gmem.set_value(self.obj.id, True)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Setting variable {self.obj.name} value failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.gmem.set_value(self.obj.id, True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        try:
-            await self.client.gmem.set_value(self.obj.id, False)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Setting variable {self.obj.name} value failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.gmem.set_value(self.obj.id, False))

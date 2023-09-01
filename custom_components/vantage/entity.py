@@ -1,15 +1,17 @@
 """Support for generic Vantage entities."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from typing import Any, Generic, TypeVar
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
+from aiovantage.errors import ClientError
 from aiovantage.models import GMem, SystemObject
 
 from homeassistant.components.group import Entity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -17,16 +19,17 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .device import vantage_device_info
 
-T = TypeVar("T", bound=SystemObject)
+T = TypeVar("T")
+SystemObjectT = TypeVar("SystemObjectT", bound=SystemObject)
 
 
 def async_register_vantage_objects(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-    controller: BaseController[T],
-    entity_class: type["VantageEntity[T]"],
-    object_filter: Callable[[T], bool] | None = None,
+    controller: BaseController[SystemObjectT],
+    entity_class: type["VantageEntity[SystemObjectT]"],
+    object_filter: Callable[[SystemObjectT], bool] | None = None,
 ) -> None:
     """Add entities to HA from a Vantage controller, add a callback for new entities."""
     vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
@@ -38,7 +41,7 @@ def async_register_vantage_objects(
 
     # Register a callback for objects added to this controller that match the filter
     @callback
-    def async_add_entity(_type: VantageEvent, obj: T, _data: Any) -> None:
+    def async_add_entity(_type: VantageEvent, obj: SystemObjectT, _data: Any) -> None:
         if object_filter is None or object_filter(obj):
             async_add_entities([entity_class(vantage, entry, controller, obj)])
 
@@ -58,7 +61,7 @@ def async_cleanup_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
             ent_reg.async_remove(entity.entity_id)
 
 
-class VantageEntity(Generic[T], Entity):
+class VantageEntity(Generic[SystemObjectT], Entity):
     """Base class for Vantage entities."""
 
     _attr_should_poll = False
@@ -68,8 +71,8 @@ class VantageEntity(Generic[T], Entity):
         self,
         client: Vantage,
         config_entry: ConfigEntry,
-        controller: BaseController[T],
-        obj: T,
+        controller: BaseController[SystemObjectT],
+        obj: SystemObjectT,
     ):
         """Initialize a generic Vantage entity."""
         self.client = client
@@ -111,8 +114,17 @@ class VantageEntity(Generic[T], Entity):
             )
         )
 
+    async def async_request_call(self, coro: Coroutine[Any, Any, T]) -> T:
+        """Send a request to the Vantage controller."""
+        try:
+            return await coro
+        except ClientError as err:
+            raise HomeAssistantError(f"Request failed with error: {err}") from err
+
     @callback
-    def _handle_event(self, event_type: VantageEvent, obj: T, _data: Any) -> None:
+    def _handle_event(
+        self, event_type: VantageEvent, obj: SystemObjectT, _data: Any
+    ) -> None:
         # Handle callback from Vantage for this object.
         if event_type == VantageEvent.OBJECT_DELETED:
             # Remove the entity from the entity registry.

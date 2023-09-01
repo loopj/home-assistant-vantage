@@ -7,7 +7,6 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.errors import ClientError
 from aiovantage.models import Temperature, Thermostat
 
 from homeassistant.components.climate import (
@@ -23,7 +22,6 @@ from homeassistant.components.climate import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, LOGGER
@@ -175,14 +173,9 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             LOGGER.error("Invalid mode for async_set_hvac_mode: %s", hvac_mode)
             return
 
-        try:
-            await self.client.thermostats.set_operation_mode(
-                self.obj.id, vantage_hvac_mode
-            )
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Setting HVAC mode {self.obj.name} failed with error: {err}"
-            ) from err
+        await self.async_request_call(
+            self.client.thermostats.set_operation_mode(self.obj.id, vantage_hvac_mode)
+        )
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
@@ -195,12 +188,9 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             LOGGER.error("Invalid mode for async_set_fan_mode: %s", fan_mode)
             return
 
-        try:
-            await self.client.thermostats.set_fan_mode(self.obj.id, vantage_fan_mode)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Setting HVAC {self.obj.name} mode failed with error: {err}"
-            ) from err
+        await self.async_request_call(
+            self.client.thermostats.set_fan_mode(self.obj.id, vantage_fan_mode)
+        )
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
@@ -208,22 +198,24 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
         high_temp = kwargs.get(ATTR_TARGET_TEMP_HIGH)
         temp = kwargs.get(ATTR_TEMPERATURE)
 
-        try:
-            if self.hvac_mode == HVACMode.HEAT_COOL and low_temp and high_temp:
-                await self.client.thermostats.set_cool_set_point(self.obj.id, high_temp)
-                await self.client.thermostats.set_heat_set_point(self.obj.id, low_temp)
-            elif self.hvac_mode == HVACMode.HEAT and temp:
-                await self.client.thermostats.set_heat_set_point(self.obj.id, temp)
-            elif self.hvac_mode == HVACMode.COOL and temp:
-                await self.client.thermostats.set_cool_set_point(self.obj.id, temp)
-            else:
-                LOGGER.error(
-                    "Invalid arguments for async_set_temperature in %s", kwargs
-                )
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Setting HVAC {self.obj.name} temperature failed with error: {err}"
-            ) from err
+        if self.hvac_mode == HVACMode.HEAT_COOL and low_temp and high_temp:
+            await self.async_request_call(
+                self.client.thermostats.set_cool_set_point(self.obj.id, high_temp)
+            )
+
+            await self.async_request_call(
+                self.client.thermostats.set_heat_set_point(self.obj.id, low_temp)
+            )
+        elif self.hvac_mode == HVACMode.HEAT and temp:
+            await self.async_request_call(
+                self.client.thermostats.set_heat_set_point(self.obj.id, temp)
+            )
+        elif self.hvac_mode == HVACMode.COOL and temp:
+            await self.async_request_call(
+                self.client.thermostats.set_cool_set_point(self.obj.id, temp)
+            )
+        else:
+            LOGGER.error("Invalid arguments for async_set_temperature in %s", kwargs)
 
     @property
     def _cool_setpoint_value(self) -> float | None:

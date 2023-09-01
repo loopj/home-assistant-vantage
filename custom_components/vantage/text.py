@@ -3,12 +3,10 @@
 import functools
 
 from aiovantage import Vantage
-from aiovantage.errors import ClientError
 
 from homeassistant.components.text import TextEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -43,9 +41,4 @@ class VantageTextVariable(VantageVariableEntity, TextEntity):
 
     async def async_set_value(self, value: str) -> None:
         """Change the value."""
-        try:
-            await self.client.gmem.set_value(self.obj.id, value)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Setting variable {self.obj.name} value failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.gmem.set_value(self.obj.id, value))

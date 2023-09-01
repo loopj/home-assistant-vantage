@@ -4,13 +4,11 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.errors import ClientError
 from aiovantage.models import Blind, BlindGroup
 
 from homeassistant.components.cover import CoverDeviceClass, CoverEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
@@ -49,30 +47,15 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        try:
-            await self.client.blinds.open(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Opening cover {self.obj.name} failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.blinds.open(self.obj.id))
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close cover."""
-        try:
-            await self.client.blinds.close(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Closing cover {self.obj.name} failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.blinds.close(self.obj.id))
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        try:
-            await self.client.blinds.stop(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Stopping cover {self.obj.name} failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.blinds.stop(self.obj.id))
 
 
 class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
@@ -85,27 +68,12 @@ class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        try:
-            await self.client.blind_groups.open(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Opening cover group {self.obj.name} failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.blind_groups.open(self.obj.id))
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close cover."""
-        try:
-            await self.client.blind_groups.close(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Closing cover group {self.obj.name} failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.blind_groups.close(self.obj.id))
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        try:
-            await self.client.blind_groups.stop(self.obj.id)
-        except ClientError as err:
-            raise HomeAssistantError(
-                f"Stopping cover group {self.obj.name} failed with error: {err}"
-            ) from err
+        await self.async_request_call(self.client.blind_groups.stop(self.obj.id))
