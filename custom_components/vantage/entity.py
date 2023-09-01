@@ -33,14 +33,14 @@ def async_register_vantage_objects(
 
     # Add all current objects in the controller that match the filter
     objects = controller.filter(object_filter) if object_filter else controller
-    entities = [entity_class(vantage, controller, obj) for obj in objects]
+    entities = [entity_class(vantage, entry, controller, obj) for obj in objects]
     async_add_entities(entities)
 
     # Register a callback for objects added to this controller that match the filter
     @callback
     def async_add_entity(_type: VantageEvent, obj: T, _data: Any) -> None:
         if object_filter is None or object_filter(obj):
-            async_add_entities([entity_class(vantage, controller, obj)])
+            async_add_entities([entity_class(vantage, entry, controller, obj)])
 
     entry.async_on_unload(
         controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
@@ -64,9 +64,16 @@ class VantageEntity(Generic[T], Entity):
     _attr_should_poll = False
     _attr_has_entity_name = True
 
-    def __init__(self, client: Vantage, controller: BaseController[T], obj: T):
+    def __init__(
+        self,
+        client: Vantage,
+        config_entry: ConfigEntry,
+        controller: BaseController[T],
+        obj: T,
+    ):
         """Initialize a generic Vantage entity."""
         self.client = client
+        self.config_entry = config_entry
         self.controller = controller
         self.obj = obj
         self.parent_obj: SystemObject | None = None
@@ -113,25 +120,20 @@ class VantageEntity(Generic[T], Entity):
             if self.entity_id in ent_reg.entities:
                 ent_reg.async_remove(self.entity_id)
 
-            # If this entity owns a device, also remove it from the device registry.
+            # If this object owns a device, remove it from the device registry.
             dev_reg = dr.async_get(self.hass)
-            device = dev_reg.async_get_device({(DOMAIN, str(obj.id))})
-            if device is not None:
+            if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
                 dev_reg.async_remove_device(device.id)
 
         elif event_type == VantageEvent.OBJECT_UPDATED:
-            # If this entity owns a device, update it in the device registry.
+            # If this object owns a device, update it in the device registry.
             dev_reg = dr.async_get(self.hass)
-            device = dev_reg.async_get_device({(DOMAIN, str(obj.id))})
-            if (
-                device is not None
-                and self.registry_entry is not None
-                and self.registry_entry.config_entry_id is not None
-            ):
-                dev_reg.async_get_or_create(
-                    config_entry_id=self.registry_entry.config_entry_id,
-                    **vantage_device_info(self.client, obj),
-                )
+            if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
+                if self.registry_entry and self.registry_entry.config_entry_id:
+                    dev_reg.async_get_or_create(
+                        config_entry_id=self.registry_entry.config_entry_id,
+                        **vantage_device_info(self.client, obj),
+                    )
 
         # Object state is kept up to date by the Vantage client by an internal
         # subscription.  We just need to tell HA the state has changed.
