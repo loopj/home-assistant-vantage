@@ -41,4 +41,4 @@ class VantageTextVariable(VantageVariableEntity, TextEntity):
 
     async def async_set_value(self, value: str) -> None:
         """Change the value."""
-        await self.client.gmem.set_value(self.obj.id, value)
+        await self.async_request_call(self.client.gmem.set_value(self.obj.id, value))

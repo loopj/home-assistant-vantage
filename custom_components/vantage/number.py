@@ -88,4 +88,4 @@ class VantageNumberVariable(VantageVariableEntity, NumberEntity):
         else:
             value = int(value)
 
-        await self.client.gmem.set_value(self.obj.id, value)
+        await self.async_request_call(self.client.gmem.set_value(self.obj.id, value))

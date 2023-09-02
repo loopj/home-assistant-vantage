@@ -41,11 +41,11 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.client.loads.turn_on(self.obj.id)
+        await self.async_request_call(self.client.loads.turn_on(self.obj.id))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.client.loads.turn_off(self.obj.id)
+        await self.async_request_call(self.client.loads.turn_off(self.obj.id))
 
 
 class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
@@ -61,8 +61,8 @@ class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.client.gmem.set_value(self.obj.id, True)
+        await self.async_request_call(self.client.gmem.set_value(self.obj.id, True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.client.gmem.set_value(self.obj.id, False)
+        await self.async_request_call(self.client.gmem.set_value(self.obj.id, False))

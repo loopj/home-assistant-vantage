@@ -173,7 +173,9 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             LOGGER.error("Invalid mode for async_set_hvac_mode: %s", hvac_mode)
             return
 
-        await self.client.thermostats.set_operation_mode(self.obj.id, vantage_hvac_mode)
+        await self.async_request_call(
+            self.client.thermostats.set_operation_mode(self.obj.id, vantage_hvac_mode)
+        )
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
@@ -186,7 +188,9 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             LOGGER.error("Invalid mode for async_set_fan_mode: %s", fan_mode)
             return
 
-        await self.client.thermostats.set_fan_mode(self.obj.id, vantage_fan_mode)
+        await self.async_request_call(
+            self.client.thermostats.set_fan_mode(self.obj.id, vantage_fan_mode)
+        )
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
@@ -195,12 +199,21 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
         temp = kwargs.get(ATTR_TEMPERATURE)
 
         if self.hvac_mode == HVACMode.HEAT_COOL and low_temp and high_temp:
-            await self.client.thermostats.set_cool_set_point(self.obj.id, high_temp)
-            await self.client.thermostats.set_heat_set_point(self.obj.id, low_temp)
+            await self.async_request_call(
+                self.client.thermostats.set_cool_set_point(self.obj.id, high_temp)
+            )
+
+            await self.async_request_call(
+                self.client.thermostats.set_heat_set_point(self.obj.id, low_temp)
+            )
         elif self.hvac_mode == HVACMode.HEAT and temp:
-            await self.client.thermostats.set_heat_set_point(self.obj.id, temp)
+            await self.async_request_call(
+                self.client.thermostats.set_heat_set_point(self.obj.id, temp)
+            )
         elif self.hvac_mode == HVACMode.COOL and temp:
-            await self.client.thermostats.set_cool_set_point(self.obj.id, temp)
+            await self.async_request_call(
+                self.client.thermostats.set_cool_set_point(self.obj.id, temp)
+            )
         else:
             LOGGER.error("Invalid arguments for async_set_temperature in %s", kwargs)
 

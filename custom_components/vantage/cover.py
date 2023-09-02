@@ -47,15 +47,15 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        await self.client.blinds.open(self.obj.id)
+        await self.async_request_call(self.client.blinds.open(self.obj.id))
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close cover."""
-        await self.client.blinds.close(self.obj.id)
+        await self.async_request_call(self.client.blinds.close(self.obj.id))
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        await self.client.blinds.stop(self.obj.id)
+        await self.async_request_call(self.client.blinds.stop(self.obj.id))
 
 
 class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
@@ -68,12 +68,12 @@ class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        await self.client.blind_groups.open(self.obj.id)
+        await self.async_request_call(self.client.blind_groups.open(self.obj.id))
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close cover."""
-        await self.client.blind_groups.close(self.obj.id)
+        await self.async_request_call(self.client.blind_groups.close(self.obj.id))
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        await self.client.blind_groups.stop(self.obj.id)
+        await self.async_request_call(self.client.blind_groups.stop(self.obj.id))
