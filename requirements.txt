@@ -18,4 +18,4 @@ mypy==1.5.1
 ruff==0.0.286
 
 # Other
-pre-commit==3.3.3
+pre-commit==3.4.0
