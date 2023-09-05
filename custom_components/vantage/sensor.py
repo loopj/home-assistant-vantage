@@ -51,6 +51,7 @@ class VantageTemperatureSensor(VantageEntity[Temperature], SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = "measurement"
+    _attr_suggested_display_precision = 1
 
     def __post_init__(self) -> None:
         """Initialize a Vantage temperature sensor."""

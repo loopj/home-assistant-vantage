@@ -7,7 +7,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.models import Temperature, Thermostat
+from aiovantage.models import Thermostat
 
 from homeassistant.components.climate import (
     ATTR_TARGET_TEMP_HIGH,
@@ -75,10 +75,9 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
         """Initialize a Vantage Cover."""
 
         # Look up the sensors attached to this thermostat
-        self.sensors = self.client.thermostats.sensors(self.obj.id)
-        self.temperature = self.sensors.get(setpoint=None)
-        self.cool_setpoint = self.sensors.get(setpoint=Temperature.Setpoint.COOL)
-        self.heat_setpoint = self.sensors.get(setpoint=Temperature.Setpoint.HEAT)
+        self.temperature = self.client.thermostats.indoor_sensor(self.obj.id).first()
+        self.cool_setpoint = self.client.thermostats.cool_setpoint(self.obj.id).first()
+        self.heat_setpoint = self.client.thermostats.heat_setpoint(self.obj.id).first()
 
         # Set up the entity attributes
         self._attr_supported_features = (
@@ -103,11 +102,17 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
         """Register callbacks."""
         await super().async_added_to_hass()
 
-        # Register a callback for when the temperature sensors are updated
+        # Register a callback for when child temperature sensors are updated
+        sensor_ids = [
+            obj.id
+            for obj in [self.temperature, self.cool_setpoint, self.heat_setpoint]
+            if obj is not None
+        ]
+
         self.async_on_remove(
             self.client.temperature_sensors.subscribe(
                 lambda e, o, d: self.async_write_ha_state(),
-                (obj.id for obj in self.sensors),
+                sensor_ids,
                 VantageEvent.OBJECT_UPDATED,
             )
         )
