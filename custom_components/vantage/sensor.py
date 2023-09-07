@@ -78,12 +78,6 @@ class VantageWindSensor(VantageEntity[AnemoSensor], SensorEntity):
         """Return the value reported by the sensor."""
         return self.obj.speed
 
-    async def async_update(self) -> None:
-        """Update the state of the sensor."""
-        self.obj.speed = await self.async_request_call(
-            self.client.anemo_sensors.get_speed(self.obj.id)
-        )
-
 
 class VantageLightSensor(VantageEntity[LightSensor], SensorEntity):
     """Vantage light sensor entity."""
@@ -100,12 +94,6 @@ class VantageLightSensor(VantageEntity[LightSensor], SensorEntity):
             return None
 
         return float(self.obj.level) * FOOT_CANDLES_TO_LUX
-
-    async def async_update(self) -> None:
-        """Update the state of the sensor."""
-        self.obj.level = await self.async_request_call(
-            self.client.light_sensors.get_level(self.obj.id)
-        )
 
 
 class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
@@ -138,12 +126,6 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
     def native_value(self) -> int | Decimal | None:
         """Return the value reported by the sensor."""
         return self.obj.level
-
-    async def async_update(self) -> None:
-        """Update the state of the sensor."""
-        self.obj.level = await self.async_request_call(
-            self.client.omni_sensors.get_level(self.obj.id)
-        )
 
 
 class VantageMasterSerial(VantageEntity[Master], SensorEntity):

@@ -7,6 +7,7 @@ from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
 from aiovantage.errors import (
     ClientError,
+    InvalidObjectError,
     LoginFailedError,
     LoginRequiredError,
 )
@@ -117,12 +118,19 @@ class VantageEntity(Generic[SystemObjectT], Entity):
             return await coro
         except ClientError as err:
             if isinstance(err, LoginFailedError | LoginRequiredError):
-                # Handle expired or invalid credentials. This will prompt the user to
-                # reconfigure the integration.
+                # If authentication fails, prompt the user to reconfigure the
+                # integration. This can happen when authentication is enabled on the
+                # controller after the integration is configured, when the user changes
+                # the password, or when a firmware update resets the password.
                 self.config_entry.async_start_reauth(self.hass)
+            elif isinstance(err, InvalidObjectError):
+                # If the object ID of a request is invalid, mark the entity as
+                # unavailable. This can happen when the user deletes an object from the
+                # Vantage project and we haven't refreshed the entity registry yet.
+                self._attr_available = False
 
             raise HomeAssistantError(
-                f"Request for {self.entity_id} failed: {err}"
+                f"Request for {self.entity_id} ({self.obj.id}) failed: {err}"
             ) from err
 
     async def async_added_to_hass(self) -> None:
@@ -134,6 +142,10 @@ class VantageEntity(Generic[SystemObjectT], Entity):
                 (VantageEvent.OBJECT_UPDATED, VantageEvent.OBJECT_DELETED),
             )
         )
+
+    async def async_update(self) -> None:
+        """Update the state of an entity manully, typically when polling."""
+        await self.async_request_call(self.controller.fetch_object_state(self.obj.id))
 
     @callback
     def _handle_event(
