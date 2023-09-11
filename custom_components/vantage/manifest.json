@@ -19,7 +19,7 @@
   "requirements": [
     "aiovantage==0.12.8"
   ],
-  "version": "0.10.0",
+  "version": "0.10.1-beta1",
   "zeroconf": [
     {
       "type": "_secure_aci._tcp.local.",
