@@ -17,7 +17,7 @@
     "custom_components.vantage"
   ],
   "requirements": [
-    "aiovantage==0.12.8"
+    "aiovantage==0.13.0b2"
   ],
   "version": "0.10.1",
   "zeroconf": [

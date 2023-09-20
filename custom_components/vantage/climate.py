@@ -46,7 +46,7 @@ VANTAGE_HVAC_ACTION_MAP = {
 }
 
 VANTAGE_FAN_MODE_MAP = {
-    Thermostat.FanMode.OFF: FAN_AUTO,
+    Thermostat.FanMode.AUTO: FAN_AUTO,
     Thermostat.FanMode.ON: FAN_ON,
 }
 

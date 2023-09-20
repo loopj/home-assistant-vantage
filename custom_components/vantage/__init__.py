@@ -1,11 +1,15 @@
 """The Vantage InFusion Controller integration."""
 
-from aiovantage import Vantage
+import asyncio
+from typing import Any
+
+from aiovantage import Vantage, VantageEvent
 from aiovantage.errors import (
     ClientConnectionError,
     LoginFailedError,
     LoginRequiredError,
 )
+from aiovantage.models import Master
 
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -37,6 +41,9 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
     Platform.TEXT,
 ]
+
+# How long to wait after receiving a system programming event before refreshing
+SYSTEM_PROGRAMMING_DELAY = 30
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -70,6 +77,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Clean up any orphaned entities
         async_cleanup_entities(hass, entry)
+
+        # Subscribe to system programming events
+        async def handle_system_program_event(
+            event: VantageEvent, obj: Master, data: dict[str, Any]
+        ) -> None:
+            # Return early if the last_updated attribute did not change
+            if "last_updated" not in data.get("attrs_changed", []):
+                return
+
+            # The last_updated attribute changes at the start of system programming.
+            # Unfortunately, the Vantage controller does not send an event when
+            # programming ends, so we must wait for a short time before refreshing
+            # controllers to avoid fetching incomplete data.
+            await asyncio.sleep(SYSTEM_PROGRAMMING_DELAY)
+            await vantage.initialize()
+
+        vantage.masters.subscribe(
+            handle_system_program_event, event_filter=VantageEvent.OBJECT_UPDATED
+        )
 
     except (LoginFailedError, LoginRequiredError) as err:
         # Handle expired or invalid credentials. This will prompt the user to
