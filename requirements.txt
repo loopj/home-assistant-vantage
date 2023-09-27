@@ -15,7 +15,7 @@ homeassistant-stubs==2023.9.3
 # Linting, etc
 black==23.9.1
 mypy==1.5.1
-ruff==0.0.290
+ruff==0.0.291
 
 # Other
 pre-commit==3.4.0
