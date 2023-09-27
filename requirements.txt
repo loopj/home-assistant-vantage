@@ -1,5 +1,5 @@
 # Home assistant
-homeassistant==2023.9.2
+homeassistant==2023.9.3
 colorlog==6.7.0
 
 # Use a specific version of aiovantage
