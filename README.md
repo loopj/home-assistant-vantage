@@ -2,7 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/loopj/home-assistant-vantage?style=for-the-badge)](http://github.com/loopj/home-assistant-vantage/releases/latest)
 [![Discord](https://img.shields.io/discord/1120862286576353370?style=for-the-badge)](https://discord.gg/psU7PxDyNQ)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 Home Assistant integration for Vantage InFusion home automation controllers, using [aiovantage](https://github.com/loopj/aiovantage).
 
@@ -33,7 +33,7 @@ If you aren't using the default *administrator* user, ensure that the following 
 
 The easiest way to install this integration is by using [HACS](https://hacs.xyz).
 
-If you have HACS installed, you can add the Vantage integration as a custom repository by using this My button:
+If you have HACS installed, you can add the Vantage integration by using this My button:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=loopj&repository=home-assistant-vantage&category=integration)
 
