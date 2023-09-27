@@ -16,7 +16,7 @@ The features of this integration include:
 - Automatic Vantage controller discovery (via mDNS).
 - UI-based configuration (config flow).
 - Entity state updated using [Local Push](https://www.home-assistant.io/blog/2016/02/12/classifying-the-internet-of-things/#classifiers).
-- Entities and devices are automatically synchronized upon restart of Home Assistant when changed in Vantage.
+- Entities and devices are automatically synchronized when the Vantage system is programmed.
 - Non-blocking I/O, via asyncio and [aiovantage](https://github.com/loopj/aiovantage).
 - Uses SSL connections by default, with automatic reconnection.
 - Works with Vantage InFusion and IC-II controllers running firmware 2.3 and above.
