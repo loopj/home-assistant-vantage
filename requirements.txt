@@ -13,7 +13,7 @@ voluptuous-stubs==0.1.1
 homeassistant-stubs==2023.10.3
 
 # Linting, etc
-black==23.9.1
+black==23.10.0
 mypy==1.6.0
 ruff==0.0.292
 
