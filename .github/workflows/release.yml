@@ -35,6 +35,7 @@ jobs:
           files: ${{ github.workspace }}/custom_components/vantage/vantage.zip
 
       - name: Github Releases To Discord
+        if: github.repository == 'loopj/home-assistant-vantage'
         uses: SethCohen/github-releases-to-discord@v1.13.1
         with:
           webhook_url: ${{ secrets.WEBHOOK_URL }}

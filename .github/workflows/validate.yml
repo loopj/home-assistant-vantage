@@ -14,6 +14,7 @@ on:
 jobs:
   hassfest: # https://developers.home-assistant.io/blog/2020/04/16/hassfest
     name: "Hassfest Validation"
+    if: github.repository == 'loopj/home-assistant-vantage'
     runs-on: "ubuntu-latest"
     steps:
         - name: "Checkout the repository"
@@ -24,6 +25,7 @@ jobs:
 
   hacs: # https://github.com/hacs/action
     name: "HACS Validation"
+    if: github.repository == 'loopj/home-assistant-vantage'
     runs-on: "ubuntu-latest"
     steps:
         - name: "Checkout the repository"
