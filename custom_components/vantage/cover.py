@@ -6,7 +6,12 @@ from typing import Any
 from aiovantage import Vantage
 from aiovantage.models import Blind, BlindGroup
 
-from homeassistant.components.cover import CoverDeviceClass, CoverEntity
+from homeassistant.components.cover import (
+    CoverDeviceClass,
+    CoverEntity,
+    CoverEntityFeature,
+    ATTR_POSITION,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -34,6 +39,12 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
 
     def __post_init__(self) -> None:
         """Initialize a Vantage Cover."""
+        self._attr_supported_features = (
+            CoverEntityFeature.OPEN
+            | CoverEntityFeature.CLOSE
+            | CoverEntityFeature.STOP
+            | CoverEntityFeature.SET_POSITION
+        )
         match self.obj.type:
             case "Drapery":
                 self._attr_device_class = CoverDeviceClass.CURTAIN
@@ -43,7 +54,16 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
     @property
     def is_closed(self) -> bool | None:
         """Return if the cover is closed or not."""
-        return None
+        if self.obj.position is None:
+            return None
+        return self.obj.position < 1
+
+    @property
+    def current_cover_position(self) -> int | None:
+        """Return the current position of cover."""
+        if self.obj.position is None:
+            return None
+        return int(self.obj.position)
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
@@ -57,14 +77,40 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
         """Stop the cover."""
         await self.async_request_call(self.client.blinds.stop(self.obj.id))
 
+    async def async_set_cover_position(self, **kwargs: Any) -> None:
+        """Move the cover to a specific position."""
+        if ATTR_POSITION in kwargs:
+            position = kwargs[ATTR_POSITION]
+            await self.async_request_call(
+                self.client.blinds.set_position(self.obj.id, position)
+            )
+
 
 class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
     """Vantage blind group cover entity."""
 
+    def __post_init__(self) -> None:
+        """Initialize a Vantage Cover Group."""
+        self._attr_supported_features = (
+            CoverEntityFeature.OPEN
+            | CoverEntityFeature.CLOSE
+            | CoverEntityFeature.STOP
+            | CoverEntityFeature.SET_POSITION
+        )
+
     @property
     def is_closed(self) -> bool | None:
         """Return if the cover is closed or not."""
-        return None
+        if self.obj.position is None:
+            return None
+        return self.obj.position < 1
+
+    @property
+    def current_cover_position(self) -> int | None:
+        """Return the current position of cover."""
+        if self.obj.position is None:
+            return None
+        return int(self.obj.position)
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
@@ -77,3 +123,11 @@ class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
         await self.async_request_call(self.client.blind_groups.stop(self.obj.id))
+
+    async def async_set_cover_position(self, **kwargs: Any) -> None:
+        """Move the cover to a specific position."""
+        if ATTR_POSITION in kwargs:
+            position = kwargs[ATTR_POSITION]
+            await self.async_request_call(
+                self.client.blind_groups.set_position(self.obj.id, position)
+            )
