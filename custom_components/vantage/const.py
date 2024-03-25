@@ -1,4 +1,5 @@
 """Constants for the Vantage InFusion Controller integration."""
+
 import logging
 
 # Logging
