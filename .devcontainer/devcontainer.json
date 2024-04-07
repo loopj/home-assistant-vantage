@@ -1,6 +1,6 @@
 {
     "name": "loopj/home-assistant-vantage",
-    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
+    "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
         8123
@@ -14,24 +14,24 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "ms-python.python",
-                "ms-python.pylint",
                 "ms-python.black-formatter",
+                "ms-python.isort",
+                "ms-python.pylint",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
                 "matangover.mypy"
             ],
             "settings": {
                 "files.eol": "\n",
                 "editor.tabSize": 4,
                 "python.pythonPath": "/usr/local/bin/python",
-                "python.linting.pylintEnabled": false,
-                "python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
-                "python.linting.mypyEnabled": true,
-                "python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
-                "python.linting.enabled": true,
                 "python.formatting.provider": "black",
                 "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
                 "editor.formatOnSave": true,
-                "files.trimTrailingWhitespace": true
+                "files.trimTrailingWhitespace": true,
+                "[markdown]": {
+                    "files.trimTrailingWhitespace": false
+                },
             }
         }
     },
