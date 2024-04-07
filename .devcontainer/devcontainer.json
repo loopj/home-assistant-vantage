@@ -24,7 +24,6 @@
             "settings": {
                 "files.eol": "\n",
                 "editor.tabSize": 4,
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
                 "editor.formatOnSave": true,
                 "files.trimTrailingWhitespace": true,
                 "[markdown]": {
