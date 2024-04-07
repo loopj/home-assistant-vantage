@@ -1,4 +1,5 @@
 """Config flow for Vantage InFusion Controller integration."""
+
 from typing import Any
 
 from aiovantage.discovery import (
