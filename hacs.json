@@ -1,7 +1,7 @@
 {
     "name": "Vantage InFusion",
     "filename": "vantage.zip",
-    "homeassistant": "2023.3.0",
+    "homeassistant": "2024.1.0",
     "render_readme": true,
     "zip_release": true
 }
