@@ -22,12 +22,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util.color import brightness_to_value, value_to_brightness
 
 from .const import DOMAIN, LOGGER
 from .entity import VantageEntity, async_register_vantage_objects
 
 # TypeVar for RGB/RGBW color tuples
 ColorT = TypeVar("ColorT", tuple[int, int, int], tuple[int, int, int, int])
+
+# Vantage level range for converting between HA brightness and Vantage levels
+LEVEL_RANGE = (0, 100)
 
 
 async def async_setup_entry(
@@ -75,12 +79,12 @@ class VantageLight(VantageEntity[Load], LightEntity):
         if self.obj.level is None:
             return None
 
-        return level_to_brightness(self.obj.level)
+        return value_to_brightness(LEVEL_RANGE, self.obj.level)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
         transition = kwargs.get(ATTR_TRANSITION, 0)
-        level = brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255))
+        level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
 
         await self.async_request_call(
             self.client.loads.turn_on(self.obj.id, transition, level)
@@ -144,7 +148,7 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
         if self.obj.level is None:
             return None
 
-        return level_to_brightness(self.obj.level)
+        return value_to_brightness(LEVEL_RANGE, self.obj.level)
 
     @property
     def hs_color(self) -> tuple[float, float] | None:
@@ -200,7 +204,7 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
             # Turn on the light with the provided HS color and brightness, default to
             # 100% brightness if not provided
             hs: tuple[float, float] = kwargs[ATTR_HS_COLOR]
-            level = brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255))
+            level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
             transition = kwargs.get(ATTR_TRANSITION, 0)
 
             await self.async_request_call(
@@ -218,7 +222,7 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
 
             # Turn on the light with the provided brightness, default to 100%
             transition = kwargs.get(ATTR_TRANSITION, 0)
-            level = brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255))
+            level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
 
             await self.async_request_call(
                 self.client.rgb_loads.turn_on(self.obj.id, transition, level)
@@ -265,12 +269,12 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
         if self.obj.level is None:
             return None
 
-        return level_to_brightness(self.obj.level)
+        return value_to_brightness(LEVEL_RANGE, self.obj.level)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
         transition = kwargs.get(ATTR_TRANSITION, 0)
-        level = brightness_to_level(kwargs.get(ATTR_BRIGHTNESS, 255))
+        level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
 
         await self.async_request_call(
             self.client.load_groups.turn_on(self.obj.id, transition, level)
@@ -291,13 +295,3 @@ def scale_color_brightness(color: ColorT, brightness: int) -> ColorT:
         return color
 
     return cast(ColorT, tuple(int(round(c * brightness / 255)) for c in color))
-
-
-def brightness_to_level(brightness: int) -> float:
-    """Convert a HA brightness value [0..255] to a Vantage level value [0..100]."""
-    return brightness / 255 * 100
-
-
-def level_to_brightness(level: float) -> int:
-    """Convert a Vantage level value [0..100] to a HA brightness value [0..255]."""
-    return round(level / 100 * 255)
