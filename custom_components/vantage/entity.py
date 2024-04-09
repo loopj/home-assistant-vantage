@@ -13,7 +13,7 @@ from aiovantage.errors import (
 )
 from aiovantage.models import GMem, SystemObject
 
-from homeassistant.components.group import Entity
+from homeassistant.helpers.entity import Entity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
