@@ -3,7 +3,7 @@ default_config:
 
 # https://www.home-assistant.io/integrations/logger/
 logger:
-  default: info
+  default: debug
   logs:
     custom_components.vantage: debug
-    # aiovantage: debug
+    aiovantage: debug
