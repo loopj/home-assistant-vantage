@@ -19,10 +19,12 @@ repos:
           - voluptuous-stubs==0.1.1
           - homeassistant-stubs==2024.4.2
         args: []
-        language_version: python3.12
 
   - repo: https://github.com/thlorenz/doctoc
     rev: v2.2.0
     hooks:
       - id: doctoc
         args: ["--github", "--notitle", "--maxlevel=2", "--update-only"]
+
+default_language_version:
+  python: python3.12
