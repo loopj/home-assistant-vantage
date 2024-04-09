@@ -1,6 +1,5 @@
 """Handle Vantage service calls."""
 
-
 from aiovantage import Vantage
 from aiovantage.models import Task
 import voluptuous as vol
