@@ -3,7 +3,7 @@ homeassistant==2024.4.2
 colorlog==6.8.2
 
 # Use a specific version of aiovantage
-aiovantage==0.13.0
+aiovantage==0.14.0
 
 # Use a local version of aiovantage
 # -e ../aiovantage
