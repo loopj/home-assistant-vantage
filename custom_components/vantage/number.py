@@ -10,7 +10,7 @@ from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER
 from .entity import VantageVariableEntity, async_register_vantage_objects
 
 
@@ -24,7 +24,9 @@ async def async_setup_entry(
     )
 
     # Register all number entities
-    register_items(vantage.gmem, VantageNumberVariable, lambda obj: obj.is_int)
+    register_items(
+        vantage.gmem, VantageNumberVariable, lambda obj: obj.is_int or obj.is_fixed
+    )
 
 
 class VantageNumberVariable(VantageVariableEntity, NumberEntity):
@@ -66,9 +68,15 @@ class VantageNumberVariable(VantageVariableEntity, NumberEntity):
                 self._attr_native_max_value = 150
                 self._attr_device_class = NumberDeviceClass.TEMPERATURE
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-
-        if self.obj.is_fixed:
-            self._attr_native_step = 0.001
+            case "Decimal":
+                # Generic signed decimal
+                self._attr_native_min_value = -(2**31)
+                self._attr_native_max_value = 2**31
+                self._attr_native_step = 0.001
+            case _:
+                LOGGER.warning(
+                    "Unknown number type %s: %s", self.obj.tag.type, self.obj
+                )
 
     @property
     def native_value(self) -> float | None:
