@@ -6,3 +6,9 @@ cd "$(dirname "$0")/.."
 
 pip install -r requirements.txt
 pre-commit install
+
+# create config directory if it doesn't exist
+if [[ ! -d "${PWD}/config" ]]; then
+    mkdir -p "${PWD}/config"
+    hass --config "${PWD}/config" --script ensure_config
+fi

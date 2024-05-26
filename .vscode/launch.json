@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "HA with Vantage",
+            "type": "debugpy",
+            "request": "launch",
+            "env": {
+                "PYTHONPATH": "${env:PYTHONPATH}${pathSeparator}${workspaceFolder}/custom_components"
+            },
+            "module": "homeassistant",
+            "args": [
+                "--config",
+                "${workspaceFolder}/config",
+                "--debug",
+                "--skip-pip-packages",
+                "aiovantage",
+            ],
+        }
+    ]
+}
