@@ -6,7 +6,7 @@ from aiovantage import Vantage
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from homeassistant.const import PERCENTAGE, LIGHT_LUX, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -68,6 +68,12 @@ class VantageNumberVariable(VantageVariableEntity, NumberEntity):
                 self._attr_native_max_value = 150
                 self._attr_device_class = NumberDeviceClass.TEMPERATURE
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+            case "Footcandles":
+                self._attr_native_min_value = 0
+                self._attr_native_max_value = 2**31
+                self._attr_native_step = 0.001 * 10.7639104167 # units: footcandles to lux
+                self._attr_device_class = NumberDeviceClass.ILLUMINANCE
+                self._attr_native_unit_of_measurement = LIGHT_LUX    
             case "Decimal":
                 # Generic signed decimal
                 self._attr_native_min_value = -(2**31)
