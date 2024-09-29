@@ -24,6 +24,7 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.util.ssl import get_default_no_verify_context
 
 from .const import DOMAIN
 from .device import async_setup_devices
@@ -53,7 +54,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data[CONF_HOST],
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
-        use_ssl=entry.data.get(CONF_SSL, True),
+        ssl=(
+            get_default_no_verify_context() if entry.data.get(CONF_SSL, True) else False
+        ),
     )
 
     # Store the client in the hass data store
