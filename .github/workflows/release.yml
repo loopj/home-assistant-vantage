@@ -36,7 +36,7 @@ jobs:
 
       - name: Github Releases To Discord
         if: github.repository == 'loopj/home-assistant-vantage'
-        uses: SethCohen/github-releases-to-discord@v1.15.0
+        uses: SethCohen/github-releases-to-discord@v1.16.2
         with:
           webhook_url: ${{ secrets.WEBHOOK_URL }}
           username: "Release Changelog"
