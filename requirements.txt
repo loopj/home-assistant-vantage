@@ -10,7 +10,7 @@ aiovantage==0.15.0
 
 # Type stubs
 voluptuous-stubs==0.1.1
-homeassistant-stubs==2024.9.2
+homeassistant-stubs==2024.10.3
 
 # Linting, etc
 black==24.8.0
