@@ -4,7 +4,7 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.models import LocationObject, Master, Parent, SystemObject
+from aiovantage.objects import LocationObject, Master, Parent, SystemObject
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -20,6 +20,9 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Set up Vantage devices in the device registry."""
     vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
     dev_reg = dr.async_get(hass)
+
+    # for master in vantage.masters:
+    #     master.firmware_version = await master.get_firmware_version()
 
     @callback
     def remove_device(device_id: str) -> None:
@@ -52,6 +55,7 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
         entry.async_on_unload(controller.subscribe(handle_device_event))
 
     # Register "parent" devices (controllers, modules, port devices, and stations)
+    register_items(vantage.back_boxes)
     register_items(vantage.masters)
     register_items(vantage.modules)
     register_items(vantage.port_devices)
@@ -77,11 +81,11 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     """Build the device info for a Vantage object."""
     device_info = DeviceInfo(
         identifiers={(DOMAIN, str(obj.id))},
-        name=obj.display_name or obj.name,
+        name=obj.display_name,
     )
 
     # Suggest sensible model and manufacturer names
-    parts = obj.vantage_type.split(".", 1)
+    parts = obj.vantage_type().split(".", 1)
     if len(parts) > 1:
         # Vantage CustomDevice objects take the form "manufacturer.model"
         device_info["manufacturer"] = parts[0]
@@ -94,8 +98,8 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     # Suggest an area for LocationObject devices
     if (
         isinstance(obj, LocationObject)
-        and obj.area_id
-        and (area := client.areas.get(obj.area_id))
+        and obj.area
+        and (area := client.areas.get(obj.area))
     ):
         device_info["suggested_area"] = area.name
 
@@ -104,10 +108,10 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
         if isinstance(obj, ChildObject) and obj.parent.id in client:
             device_info["via_device"] = (DOMAIN, str(obj.parent.id))
         else:
-            device_info["via_device"] = (DOMAIN, str(obj.master_id))
+            device_info["via_device"] = (DOMAIN, str(obj.master))
 
     # Attach the firmware version for Master devices
-    if isinstance(obj, Master):
-        device_info["sw_version"] = obj.firmware_version
+    # if isinstance(obj, Master):
+    #     device_info["sw_version"] = obj.firmware_version
 
     return device_info

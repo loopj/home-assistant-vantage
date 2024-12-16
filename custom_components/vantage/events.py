@@ -3,7 +3,7 @@
 from typing import Any
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.models import Button, Task
+from aiovantage.objects import Button, Task
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -40,7 +40,11 @@ def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
             payload["station_name"] = station.name
 
         hass.bus.async_fire(
-            EVENT_BUTTON_PRESSED if obj.pressed else EVENT_BUTTON_RELEASED,
+            (
+                EVENT_BUTTON_PRESSED
+                if obj.state == Button.State.Down
+                else EVENT_BUTTON_RELEASED
+            ),
             payload,
         )
 
@@ -54,7 +58,7 @@ def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
             }
 
             hass.bus.async_fire(
-                EVENT_TASK_STARTED if obj.is_running else EVENT_TASK_STOPPED,
+                EVENT_TASK_STARTED if obj.running else EVENT_TASK_STOPPED,
                 payload,
             )
 

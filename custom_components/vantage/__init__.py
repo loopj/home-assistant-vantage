@@ -9,7 +9,7 @@ from aiovantage.errors import (
     LoginFailedError,
     LoginRequiredError,
 )
-from aiovantage.models import Master
+from aiovantage.objects import Master
 
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -85,11 +85,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async def handle_system_program_event(
             event: VantageEvent, obj: Master, data: dict[str, Any]
         ) -> None:
-            # Return early if the last_updated attribute did not change
-            if "last_updated" not in data.get("attrs_changed", []):
+            # Return early if the mtime attribute did not change
+            if "mtime" not in data.get("attrs_changed", []):
                 return
 
-            # The last_updated attribute changes at the start of system programming.
+            # The mtime attribute changes at the start of system programming.
             # Unfortunately, the Vantage controller does not send an event when
             # programming ends, so we must wait for a short time before refreshing
             # controllers to avoid fetching incomplete data.

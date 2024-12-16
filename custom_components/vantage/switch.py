@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import Load
+from aiovantage.objects import Load
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -41,11 +41,11 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.async_request_call(self.client.loads.turn_on(self.obj.id))
+        await self.async_request_call(self.obj.turn_on())
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.async_request_call(self.client.loads.turn_off(self.obj.id))
+        await self.async_request_call(self.obj.turn_off())
 
 
 class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):

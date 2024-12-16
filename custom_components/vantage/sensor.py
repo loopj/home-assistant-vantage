@@ -6,7 +6,7 @@ import functools
 import socket
 
 from aiovantage import Vantage
-from aiovantage.models import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
+from aiovantage.objects import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry

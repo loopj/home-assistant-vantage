@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import Blind, BlindGroup
+from aiovantage.objects import Blind, BlindGroup
 
 from homeassistant.components.cover import (
     CoverDeviceClass,
@@ -67,23 +67,21 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        await self.async_request_call(self.client.blinds.open(self.obj.id))
+        await self.async_request_call(self.obj.open())
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close cover."""
-        await self.async_request_call(self.client.blinds.close(self.obj.id))
+        await self.async_request_call(self.obj.close())
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        await self.async_request_call(self.client.blinds.stop(self.obj.id))
+        await self.async_request_call(self.obj.stop())
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move the cover to a specific position."""
         if ATTR_POSITION in kwargs:
             position = kwargs[ATTR_POSITION]
-            await self.async_request_call(
-                self.client.blinds.set_position(self.obj.id, position)
-            )
+            await self.async_request_call(self.obj.set_position(position))
 
 
 class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
@@ -114,20 +112,18 @@ class VantageCoverGroup(VantageEntity[BlindGroup], CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        await self.async_request_call(self.client.blind_groups.open(self.obj.id))
+        await self.async_request_call(self.obj.open())
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close cover."""
-        await self.async_request_call(self.client.blind_groups.close(self.obj.id))
+        await self.async_request_call(self.obj.close())
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        await self.async_request_call(self.client.blind_groups.stop(self.obj.id))
+        await self.async_request_call(self.obj.stop())
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move the cover to a specific position."""
         if ATTR_POSITION in kwargs:
             position = kwargs[ATTR_POSITION]
-            await self.async_request_call(
-                self.client.blind_groups.set_position(self.obj.id, position)
-            )
+            await self.async_request_call(self.obj.set_position(position))

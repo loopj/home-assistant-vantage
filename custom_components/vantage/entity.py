@@ -11,7 +11,7 @@ from aiovantage.errors import (
     LoginFailedError,
     LoginRequiredError,
 )
-from aiovantage.models import GMem, SystemObject
+from aiovantage.objects import GMem, SystemObject
 
 from homeassistant.helpers.entity import Entity
 from homeassistant.config_entries import ConfigEntry
@@ -36,7 +36,7 @@ def async_register_vantage_objects(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
     controller: BaseController[Any],
-    entity_class: type["VantageEntity[Any]"],
+    entity_class: type["VantageEntity[SystemObjectT]"],
     object_filter: Callable[[SystemObjectT], bool] | None = None,
 ) -> None:
     """Add entities to HA from a Vantage controller, add a callback for new entities."""
@@ -145,7 +145,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
 
     async def async_update(self) -> None:
         """Update the state of an entity manully, typically when polling."""
-        await self.async_request_call(self.controller.fetch_object_state(self.obj.id))
+        await self.async_request_call(self.controller.fetch_object_state(self.obj))
 
     @callback
     def _handle_event(
@@ -195,10 +195,10 @@ class VantageVariableEntity(VantageEntity[GMem]):
 
         # Attach variable entities to a "variables" virtual device
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.obj.master_id}:variables")},
+            identifiers={(DOMAIN, f"{self.obj.master}:variables")},
             name="Variables",
             manufacturer="Vantage",
             model="Variables",
             entry_type=dr.DeviceEntryType.SERVICE,
-            via_device=(DOMAIN, str(self.obj.master_id)),
+            via_device=(DOMAIN, str(self.obj.master)),
         )
