@@ -1,6 +1,6 @@
 """Support for Vantage binary sensor entities."""
 
-from functools import cached_property, partial
+from functools import partial
 
 from aiovantage import Vantage
 from aiovantage.models import DryContact
@@ -36,7 +36,7 @@ class VantageDryContact(VantageEntity[DryContact], BinarySensorEntity):
         if parent := self.client.thermostats.get(self.obj.parent.id):
             self.parent_obj = parent
 
-    @cached_property
+    @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
         return self.obj.triggered
