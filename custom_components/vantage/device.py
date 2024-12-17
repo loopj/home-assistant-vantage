@@ -52,6 +52,7 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
         entry.async_on_unload(controller.subscribe(handle_device_event))
 
     # Register "parent" devices (controllers, modules, port devices, and stations)
+    register_items(vantage.back_boxes)
     register_items(vantage.masters)
     register_items(vantage.modules)
     register_items(vantage.port_devices)
