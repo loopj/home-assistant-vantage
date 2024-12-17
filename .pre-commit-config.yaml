@@ -1,23 +1,23 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.3.0
+    rev: 24.10.0
     hooks:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.5
+    rev: v0.8.3
     hooks:
       - id: ruff
         args: ["--fix"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.9.0"
+    rev: "v1.13.0"
     hooks:
       - id: mypy
         additional_dependencies:
-          - aiovantage==0.15.1
+          - aiovantage==0.16.0
           - voluptuous-stubs==0.1.1
-          - homeassistant-stubs==2024.10.4
+          - homeassistant-stubs==2024.12.3
         args: []
 
   - repo: https://github.com/thlorenz/doctoc
