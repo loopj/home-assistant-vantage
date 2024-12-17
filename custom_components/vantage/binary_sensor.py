@@ -1,6 +1,6 @@
 """Support for Vantage binary sensor entities."""
 
-import functools
+from functools import partial
 
 from aiovantage import Vantage
 from aiovantage.models import DryContact
@@ -19,7 +19,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage binary sensor entities from a config entry."""
     vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
-    register_items = functools.partial(
+    register_items = partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )
 

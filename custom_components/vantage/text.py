@@ -1,8 +1,10 @@
 """Support for Vantage text entities."""
 
+from collections.abc import Callable
 import functools
 
 from aiovantage import Vantage
+from aiovantage.models import GMem
 
 from homeassistant.components.text import TextEntity
 from homeassistant.config_entries import ConfigEntry
@@ -25,7 +27,8 @@ async def async_setup_entry(
     )
 
     # Register all text entities
-    register_items(vantage.gmem, VantageTextVariable, lambda obj: obj.is_str)
+    gmem_filter: Callable[[GMem], bool] = lambda obj: obj.is_str
+    register_items(vantage.gmem, VantageTextVariable, gmem_filter)
 
 
 class VantageTextVariable(VantageVariableEntity, TextEntity):

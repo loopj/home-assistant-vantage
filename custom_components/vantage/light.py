@@ -1,5 +1,6 @@
 """Support for Vantage light entities."""
 
+from collections.abc import Callable
 import functools
 from typing import Any, TypeVar, cast
 
@@ -44,7 +45,8 @@ async def async_setup_entry(
     )
 
     # Set up all light-type objects
-    register_items(vantage.loads, VantageLight, lambda obj: obj.is_light)
+    load_filter: Callable[[Load], bool] = lambda obj: obj.is_light
+    register_items(vantage.loads, VantageLight, load_filter)
     register_items(vantage.rgb_loads, VantageRGBLight)
     register_items(vantage.load_groups, VantageLightGroup)
 

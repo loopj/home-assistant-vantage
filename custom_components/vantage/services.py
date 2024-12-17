@@ -1,5 +1,6 @@
 """Handle Vantage service calls."""
 
+from typing import Any
 from aiovantage import Vantage
 from aiovantage.models import Task
 import voluptuous as vol
@@ -69,7 +70,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         )
 
 
-def _get_task(vantage: Vantage, id_or_name: int | str) -> Task | None:
+def _get_task(vantage: Vantage, id_or_name: Any | None) -> Task | None:
     """Get the task from the service call."""
     if isinstance(id_or_name, int):
         return vantage.tasks.get(id_or_name)

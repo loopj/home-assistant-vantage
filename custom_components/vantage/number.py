@@ -1,8 +1,10 @@
 """Support for Vantage number entities."""
 
 import functools
+from collections.abc import Callable
 
 from aiovantage import Vantage
+from aiovantage.models import GMem
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
@@ -24,9 +26,8 @@ async def async_setup_entry(
     )
 
     # Register all number entities
-    register_items(
-        vantage.gmem, VantageNumberVariable, lambda obj: obj.is_int or obj.is_fixed
-    )
+    gmem_filter: Callable[[GMem], bool] = lambda obj: obj.is_int or obj.is_fixed
+    register_items(vantage.gmem, VantageNumberVariable, gmem_filter)
 
 
 class VantageNumberVariable(VantageVariableEntity, NumberEntity):

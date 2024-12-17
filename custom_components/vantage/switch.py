@@ -1,10 +1,11 @@
 """Support for Vantage switch entities."""
 
+from collections.abc import Callable
 import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import Load
+from aiovantage.models import GMem, Load
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -24,11 +25,13 @@ async def async_setup_entry(
         async_register_vantage_objects, hass, entry, async_add_entities
     )
 
-    # Register all switch entities
-    register_items(
-        vantage.loads, VantageLoadSwitch, lambda obj: obj.is_relay or obj.is_motor
-    )
-    register_items(vantage.gmem, VantageVariableSwitch, lambda obj: obj.is_bool)
+    # Register Load switch entities
+    load_filter: Callable[[Load], bool] = lambda obj: obj.is_relay or obj.is_motor
+    register_items(vantage.loads, VantageLoadSwitch, load_filter)
+
+    # Register GMem switch entities
+    gmem_filter: Callable[[GMem], bool] = lambda obj: obj.is_bool
+    register_items(vantage.gmem, VantageVariableSwitch, gmem_filter)
 
 
 class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
