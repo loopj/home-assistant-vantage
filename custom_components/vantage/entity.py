@@ -10,8 +10,9 @@ from aiovantage.errors import (
     InvalidObjectError,
     LoginFailedError,
     LoginRequiredError,
+    ObjectOfflineError,
 )
-from aiovantage.models import GMem, SystemObject
+from aiovantage.objects import GMem, SystemObject
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -78,7 +79,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
         self,
         client: Vantage,
         config_entry: ConfigEntry,
-        controller: BaseController[Any],
+        controller: BaseController[SystemObjectT],
         obj: SystemObjectT,
     ):
         """Initialize a generic Vantage entity."""
@@ -122,7 +123,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
                 # controller after the integration is configured, when the user changes
                 # the password, or when a firmware update resets the password.
                 self.config_entry.async_start_reauth(self.hass)
-            elif isinstance(err, InvalidObjectError):
+            elif isinstance(err, InvalidObjectError | ObjectOfflineError):
                 # If the object ID of a request is invalid, mark the entity as
                 # unavailable. This can happen when the user deletes an object from the
                 # Vantage project and we haven't refreshed the entity registry yet.
@@ -144,7 +145,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
 
     async def async_update(self) -> None:
         """Update the state of an entity manully, typically when polling."""
-        await self.async_request_call(self.controller.fetch_object_state(self.obj.id))
+        await self.async_request_call(self.controller.fetch_object_state(self.obj))
 
     @callback
     def _handle_event(
@@ -194,10 +195,10 @@ class VantageVariableEntity(VantageEntity[GMem]):
 
         # Attach variable entities to a "variables" virtual device
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.obj.master_id}:variables")},
+            identifiers={(DOMAIN, f"{self.obj.master}:variables")},
             name="Variables",
             manufacturer="Vantage",
             model="Variables",
             entry_type=dr.DeviceEntryType.SERVICE,
-            via_device=(DOMAIN, str(self.obj.master_id)),
+            via_device=(DOMAIN, str(self.obj.master)),
         )

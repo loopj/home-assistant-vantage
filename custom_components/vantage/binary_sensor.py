@@ -3,7 +3,7 @@
 from functools import partial
 
 from aiovantage import Vantage
-from aiovantage.models import DryContact
+from aiovantage.objects import DryContact
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -39,4 +39,4 @@ class VantageDryContact(VantageEntity[DryContact], BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
-        return self.obj.triggered
+        return self.obj.state == DryContact.State.Down

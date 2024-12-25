@@ -1,10 +1,10 @@
 """Support for Vantage text entities."""
 
 from collections.abc import Callable
-import functools
+from functools import partial
 
 from aiovantage import Vantage
-from aiovantage.models import GMem
+from aiovantage.objects import GMem
 
 from homeassistant.components.text import TextEntity
 from homeassistant.config_entries import ConfigEntry
@@ -22,7 +22,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage text entities from config entry."""
     vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
-    register_items = functools.partial(
+    register_items = partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )
 

@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from aiovantage.connection import BaseConnection
 from aiovantage.discovery import (
     VantageControllerDetails,
     get_controller_details,
@@ -16,6 +17,7 @@ from homeassistant import config_entries
 from homeassistant.components import zeroconf
 from homeassistant.config_entries import ConfigEntry, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_SSL, CONF_USERNAME
+from homeassistant.util.ssl import get_default_no_verify_context
 
 from .const import DOMAIN
 
@@ -33,6 +35,9 @@ AUTH_SCHEMA = vol.Schema(
 )
 
 DEFAULT_VANTAGE_USERNAME = "administrator"
+
+# Use Home Assistant's default SSL context with certificate verification disabled
+BaseConnection.ssl_context_factory = get_default_no_verify_context
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -156,7 +161,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.controller.host,
             self.username,
             self.password,
-            self.controller.supports_ssl,
+            ssl=self.controller.supports_ssl,
         )
 
         if serial_number is None:
@@ -181,9 +186,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, _entry_data: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Perform reauth after controller authentication error."""
-        self.reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+        if not (entry_id := self.context.get("entry_id")):
+            return self.async_abort(reason="unknown")
+
+        self.reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
 
         return await self.async_step_reauth_confirm()
 
@@ -241,7 +247,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> dict[str, str] | None:
         """Validate the credentials for a Vantage controller, returning errors if invalid."""
         try:
-            if not await validate_credentials(host, username, password, ssl):
+            if not await validate_credentials(host, username, password, ssl=ssl):
                 return {"base": "invalid_auth"}
         except ClientConnectionError:
             return {"base": "cannot_connect"}

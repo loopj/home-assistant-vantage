@@ -4,12 +4,13 @@ import asyncio
 from typing import Any
 
 from aiovantage import Vantage, VantageEvent
+from aiovantage.connection import BaseConnection
 from aiovantage.errors import (
     ClientConnectionError,
     LoginFailedError,
     LoginRequiredError,
 )
-from aiovantage.models import Master
+from aiovantage.objects import Master
 
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -46,6 +47,9 @@ PLATFORMS: list[Platform] = [
 # How long to wait after receiving a system programming event before refreshing
 SYSTEM_PROGRAMMING_DELAY = 30
 
+# Use Home Assistant's default SSL context with certificate verification disabled
+BaseConnection.ssl_context_factory = get_default_no_verify_context
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
@@ -54,9 +58,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data[CONF_HOST],
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
-        ssl=(
-            get_default_no_verify_context() if entry.data.get(CONF_SSL, True) else False
-        ),
+        ssl=entry.data.get(CONF_SSL, True),
     )
 
     # Store the client in the hass data store
@@ -86,10 +88,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             event: VantageEvent, obj: Master, data: dict[str, Any]
         ) -> None:
             # Return early if the last_updated attribute did not change
-            if "last_updated" not in data.get("attrs_changed", []):
+            if "m_time" not in data.get("attrs_changed", []):
                 return
 
-            # The last_updated attribute changes at the start of system programming.
+            # The m_time attribute changes at the start of system programming.
             # Unfortunately, the Vantage controller does not send an event when
             # programming ends, so we must wait for a short time before refreshing
             # controllers to avoid fetching incomplete data.

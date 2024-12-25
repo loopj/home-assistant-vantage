@@ -4,7 +4,7 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.models import LocationObject, Master, Parent, SystemObject
+from aiovantage.objects import LocationObject, Master, Parent, SystemObject
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -82,7 +82,7 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     )
 
     # Suggest sensible model and manufacturer names
-    parts = obj.vantage_type.split(".", 1)
+    parts = obj.element_name().split(".", 1)
     if len(parts) > 1:
         # Vantage CustomDevice objects take the form "manufacturer.model"
         device_info["manufacturer"] = parts[0]
@@ -95,8 +95,8 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     # Suggest an area for LocationObject devices
     if (
         isinstance(obj, LocationObject)
-        and obj.area_id
-        and (area := client.areas.get(obj.area_id))
+        and obj.area
+        and (area := client.areas.get(obj.area))
     ):
         device_info["suggested_area"] = area.name
 
@@ -105,10 +105,6 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
         if isinstance(obj, ChildObject) and obj.parent.id in client:
             device_info["via_device"] = (DOMAIN, str(obj.parent.id))
         else:
-            device_info["via_device"] = (DOMAIN, str(obj.master_id))
-
-    # Attach the firmware version for Master devices
-    if isinstance(obj, Master):
-        device_info["sw_version"] = obj.firmware_version
+            device_info["via_device"] = (DOMAIN, str(obj.master))
 
     return device_info

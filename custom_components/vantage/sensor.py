@@ -2,11 +2,11 @@
 
 import contextlib
 from decimal import Decimal
-import functools
+from functools import partial
 import socket
 
 from aiovantage import Vantage
-from aiovantage.models import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
+from aiovantage.objects import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -32,7 +32,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage sensor entities from config entry."""
     vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
-    register_items = functools.partial(
+    register_items = partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )
 
@@ -121,6 +121,8 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
             case "Temperature":
                 self._attr_device_class = SensorDeviceClass.TEMPERATURE
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+            case _:
+                pass
 
     @property
     def native_value(self) -> int | Decimal | None:

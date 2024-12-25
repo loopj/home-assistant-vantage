@@ -1,11 +1,11 @@
 """Support for Vantage switch entities."""
 
 from collections.abc import Callable
-import functools
+from functools import partial
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import GMem, Load
+from aiovantage.objects import GMem, Load
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -21,7 +21,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage switch entities from config entry."""
     vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
-    register_items = functools.partial(
+    register_items = partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )
 
@@ -44,11 +44,11 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.async_request_call(self.client.loads.turn_on(self.obj.id))
+        await self.async_request_call(self.obj.turn_on())
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.async_request_call(self.client.loads.turn_off(self.obj.id))
+        await self.async_request_call(self.obj.turn_off())
 
 
 class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
