@@ -291,7 +291,7 @@ class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
         )
 
 
-def scale_color_brightness(color: ColorT, brightness: int) -> ColorT:
+def scale_color_brightness(color: ColorT, brightness: int | None) -> ColorT:
     """Scale the brightness of an RGB/RGBW color tuple."""
     if brightness is None:
         return color
