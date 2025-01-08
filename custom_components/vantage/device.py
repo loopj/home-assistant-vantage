@@ -4,7 +4,13 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.models import LocationObject, Master, Parent, SystemObject
+from aiovantage.models import (
+    LocationObject,
+    Master,
+    Parent,
+    StationObject,
+    SystemObject,
+)
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -98,6 +104,11 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
         and (area := client.areas.get(obj.area_id))
     ):
         device_info["suggested_area"] = area.name
+
+    # Attach serial number for devices that have one
+    if isinstance(obj, Master) or isinstance(obj, StationObject):
+        if obj.serial_number:
+            device_info["serial_number"] = str(obj.serial_number)
 
     # Set up device relationships
     if not isinstance(obj, Master):
