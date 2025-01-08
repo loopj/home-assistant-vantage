@@ -32,7 +32,7 @@ from .entity import VantageEntity, async_register_vantage_objects
 ColorT = TypeVar("ColorT", tuple[int, int, int], tuple[int, int, int, int])
 
 # Vantage level range for converting between HA brightness and Vantage levels
-LEVEL_RANGE = (0, 100)
+LEVEL_RANGE = (1, 100)
 
 
 async def async_setup_entry(
