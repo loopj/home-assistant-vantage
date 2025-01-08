@@ -30,6 +30,7 @@ from .const import DOMAIN
 from .device import async_setup_devices
 from .entity import async_cleanup_entities
 from .events import async_setup_events
+from .migrate import async_migrate_data
 from .services import async_register_services
 
 PLATFORMS: list[Platform] = [
@@ -109,6 +110,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Handle connection errors. Home Assistant will automatically take care of
         # retrying set up later.
         raise ConfigEntryNotReady from err
+
+    # Run any migrations
+    await async_migrate_data(hass, entry)
 
     return True
 
