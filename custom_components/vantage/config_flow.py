@@ -181,9 +181,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, _entry_data: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Perform reauth after controller authentication error."""
-        self.reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+        if not (entry_id := self.context.get("entry_id")):
+            return self.async_abort(reason="unknown")
+
+        self.reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
 
         return await self.async_step_reauth_confirm()
 

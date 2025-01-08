@@ -121,6 +121,8 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
             case "Temperature":
                 self._attr_device_class = SensorDeviceClass.TEMPERATURE
                 self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+            case _:
+                pass
 
     @property
     def native_value(self) -> int | Decimal | None:
