@@ -117,8 +117,10 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
             and obj.parent.id in client
             and not client.back_boxes.get(obj.parent.id)
         ):
+            # Attach the parent device for child objects (except for BackBoxes)
             device_info["via_device"] = (DOMAIN, str(obj.parent.id))
         else:
+            # Attach the master device for all other objects
             device_info["via_device"] = (DOMAIN, str(obj.master_id))
 
     # Attach the firmware version for Master devices
