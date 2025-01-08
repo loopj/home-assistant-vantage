@@ -41,7 +41,6 @@ async def async_setup_entry(
     register_items(vantage.anemo_sensors, VantageWindSensor)
     register_items(vantage.light_sensors, VantageLightSensor)
     register_items(vantage.omni_sensors, VantageOmniSensor)
-    register_items(vantage.masters, VantageMasterSerial)
     register_items(vantage.masters, VantageMasterIP)
 
 
@@ -128,23 +127,6 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
     def native_value(self) -> int | Decimal | None:
         """Return the value reported by the sensor."""
         return self.obj.level
-
-
-class VantageMasterSerial(VantageEntity[Master], SensorEntity):
-    """Vantage controller serial number sensor entity."""
-
-    _attr_icon = "mdi:barcode"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    @property
-    def name(self) -> str | None:
-        """Return the name of the entity."""
-        return "Serial Number"
-
-    def __post_init__(self) -> None:
-        """Initialize a Vantage master serial number."""
-        self._attr_unique_id = f"{self.obj.id}:serial_number"
-        self._attr_native_value = str(self.obj.serial_number)
 
 
 class VantageMasterIP(VantageEntity[Master], SensorEntity):
