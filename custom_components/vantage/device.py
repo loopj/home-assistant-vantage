@@ -52,7 +52,6 @@ def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
         entry.async_on_unload(controller.subscribe(handle_device_event))
 
     # Register "parent" devices (controllers, modules, port devices, and stations)
-    register_items(vantage.back_boxes)
     register_items(vantage.masters)
     register_items(vantage.modules)
     register_items(vantage.port_devices)
@@ -102,7 +101,11 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
 
     # Set up device relationships
     if not isinstance(obj, Master):
-        if isinstance(obj, ChildObject) and obj.parent.id in client:
+        if (
+            isinstance(obj, ChildObject)
+            and obj.parent.id in client
+            and not client.back_boxes.get(obj.parent.id)
+        ):
             device_info["via_device"] = (DOMAIN, str(obj.parent.id))
         else:
             device_info["via_device"] = (DOMAIN, str(obj.master_id))
