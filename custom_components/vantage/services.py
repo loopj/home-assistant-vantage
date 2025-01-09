@@ -12,8 +12,8 @@ import homeassistant.helpers.config_validation as cv
 from .const import DOMAIN, LOGGER, SERVICE_START_TASK, SERVICE_STOP_TASK
 
 TASK_SCHEMA = vol.All(
-    cv.has_at_most_one_key(ATTR_ID, ATTR_NAME),
-    cv.has_at_least_one_key(ATTR_ID, ATTR_NAME),
+    cv.has_at_most_one_key(ATTR_ID, ATTR_NAME),  # type: ignore
+    cv.has_at_least_one_key(ATTR_ID, ATTR_NAME),  # type: ignore
     vol.Schema(
         {
             ATTR_ID: cv.positive_int,

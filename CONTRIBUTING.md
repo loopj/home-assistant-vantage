@@ -15,44 +15,46 @@ First off, thanks for taking the time to contribute!
 
 ## 🔨 Set up Development Environment
 
-To set up your development environment, you can either use a venv or a devcontainer.
+### Using `uv`
 
-### Using a Virtual Environment (recommended)
+home-assistant-vantage uses [uv](https://docs.astral.sh/uv/) to run scripts, manage virtual environments, create reproducible builds, and publish packages. Check out the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) to get started.
 
-Create a venv in the root of the project:
-
-```bash
-python3 -m venv venv
-```
-
-Activate the venv:
+To set up your development environment, run the following commands:
 
 ```bash
-source venv/bin/activate
+# Create a virtual environment
+uv venv
+
+# Install development dependencies
+uv sync --extra dev
 ```
 
-Install the dependencies:
+To start the Home Assistant development server, run:
 
 ```bash
-./scripts/setup
+uv run scripts/develop
 ```
 
-Start Home Assistant:
+### Manually
+
+If you'd prefer to manage your own python environment, you can install the development dependencies manually.
+
+```bash
+# Create a virtual environment
+python3 -m venv .venv
+
+# Activate the virtual environment
+source .venv/bin/activate
+
+# Install development dependencies
+pip install -e ".[dev]"
+```
+
+To start the Home Assistant development server, run:
 
 ```bash
 ./scripts/develop
 ```
-
-### Using a Development Container
-
-> **Note**
-> Using a development container is not as fast as a venv, and zeroconf discovery will not work.
-
-Alternatively, you can use a [Development Container](https://containers.dev/) to set up your development environment. You'll need [Docker](https://www.docker.com/) and [Visual Studio Code](https://code.visualstudio.com/) installed, as well as the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension for Visual Studio Code.
-
-Open the project in Visual Studio Code, and you should be prompted to reopen the project in a container. If you are not prompted, you can open the command palette and select *Dev Containers: Reopen in Container*.
-
-Once the container is running, you can start Home Assistant by either running `./scripts/start` in the terminal, or by opening the command palette and selecting *Tasks: Run Task* and then *Run Home Assistant*.
 
 ## ✨ Submit your work
 
@@ -62,37 +64,37 @@ Good pull requests remain focused in scope and avoid containing unrelated commit
 
 ## 🎨 Style guidelines
 
-This project uses [pre-commit](https://pre-commit.com/) to run code linting and formatting checks before commits are made. `pre-commit` and its associated hooks will automatically be installed when you run `./scripts/setup`.
+Before submitting a pull request, make sure your code follows the style guidelines. This project uses [pyright](https://microsoft.github.io/pyright/) for type checking, and [ruff](https://docs.astral.sh/ruff/) for linting and formatting.
 
-To install `pre-commit` hook manually, run the following:
+Pull requests will trigger a CI check that blocks merging if the code does not pass the style guidelines.
+
+### Running checks automatically with vscode
+
+If you are using vscode, you'll be prompted to install the recommended extensions when you open the workspace.
+
+### Running checks manually
 
 ```bash
-pre-commit install
+# Run type checking
+uv run pyright
 ```
-
-You can invoke the pre-commit hook by hand at any time with:
 
 ```bash
-pre-commit run
+# Run linting
+uv run ruff check
 ```
 
-If you have already committed files before setting up the pre-commit hook with `pre-commit install`, you can fix everything up using `pre-commit run --all-files`. You need to make the fixing commit yourself after that.
+```bash
+# Format code
+uv run ruff format
+```
 
 ## 🚀 Publish a release
 
-Update the version number in `custom_components/vantage/manifest.json`, and commit the change to source control.
+First, update the version number:
 
 ```bash
-VERSION="1.2.3"
-git add custom_components/vantage/manifest.json
-git commit -m "Preparing release $VERSION"
+bumpver update --patch # or --major --minor
 ```
 
-Tag the release, eg:
-
-```bash
-git tag $VERSION
-git push && git push --tags
-```
-
-Releases are published automatically to HACS when a GitHub release is created from the new tag.
+Then [create a release on GitHub](https://github.com/loopj/aiovantage/releases/new). Releases are published automatically to HACS when a new GitHub release is created.

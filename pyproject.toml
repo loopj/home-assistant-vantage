@@ -1,7 +1,28 @@
-# The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-target-version = "py310"
+[project]
+name = "home-assistant-vantage"
+version = "0.13.1"
+description = "Home Assistant integration for Vantage InFusion home automation controllers."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "James Smith", email = "james@loopj.com" }]
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "aiovantage==0.16.0",
+    "homeassistant==2024.12.3",
+    "colorlog==6.9.0",
+]
 
+[project.optional-dependencies]
+dev = ["pyright==1.1.391", "ruff==0.8.6", "bumpver==2024.1130"]
+
+[tool.hatch.build.targets.wheel]
+include = ["custom_components/vantage"]
+
+[tool.ruff.lint]
 select = [
     "B007",    # Loop control variable {name} not used within loop body
     "B014",    # Exception handler with duplicate exception
@@ -38,15 +59,30 @@ ignore = [
     "E731", # do not assign a lambda expression, use a def
 ]
 
-[flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 
-[mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 25
 
-[isort]
+[tool.ruff.lint.isort]
 force-sort-within-sections = true
-known-first-party = [
-    "homeassistant",
-]
+known-first-party = ["homeassistant"]
 combine-as-imports = true
+
+[tool.pyright]
+typeCheckingMode = "strict"
+reportPrivateImportUsage = "none"
+reportIncompatibleVariableOverride = "none"
+
+[tool.bumpver]
+current_version = "0.13.1"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "Bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"custom_components/vantage/manifest.json" = ['"version": "{version}"']
