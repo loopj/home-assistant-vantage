@@ -11,7 +11,8 @@ __pycache__
 .vscode
 .idea/
 coverage.xml
-venv/
+.venv/
+uv.lock
 
 
 # Home Assistant configuration
