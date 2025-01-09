@@ -16,5 +16,4 @@ uv.lock
 
 
 # Home Assistant configuration
-config/*
-!config/configuration.yaml
+config/
