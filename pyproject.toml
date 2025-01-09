@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "home-assistant-vantage"
 version = "0.13.1"
@@ -6,10 +10,17 @@ readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "James Smith", email = "james@loopj.com" }]
 classifiers = ["Private :: Do Not Upload"]
-dependencies = ["aiovantage==0.16.0", "homeassistant==2024.12.3"]
+dependencies = [
+    "aiovantage==0.16.0",
+    "homeassistant==2024.12.3",
+    "colorlog==6.9.0",
+]
 
 [project.optional-dependencies]
 dev = ["pyright==1.1.391", "ruff==0.8.6", "bumpver==2024.1130"]
+
+[tool.hatch.build.targets.wheel]
+include = ["custom_components/vantage"]
 
 [tool.ruff.lint]
 select = [
