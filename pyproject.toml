@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pyright==1.1.391", "ruff==0.8.6", "bumpver==2024.1130"]
+dev = ["pyright==1.1.391", "ruff==0.9.1", "bumpver==2024.1130"]
 
 [tool.hatch.build.targets.wheel]
 include = ["custom_components/vantage"]
