@@ -22,12 +22,12 @@ jobs:
       run: echo "$PWD/.venv/bin" >> $GITHUB_PATH
 
     - name: Run ruff linter
-      uses: astral-sh/ruff-action@v2
+      uses: astral-sh/ruff-action@v3
       with:
         args: check
 
     - name: Run ruff formatter
-      uses: astral-sh/ruff-action@v2
+      uses: astral-sh/ruff-action@v3
       with:
         args: format --check
 
