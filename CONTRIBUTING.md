@@ -97,4 +97,4 @@ First, update the version number:
 bumpver update --patch # or --major --minor
 ```
 
-Then [create a release on GitHub](https://github.com/loopj/aiovantage/releases/new). Releases are published automatically to HACS when a new GitHub release is created.
+Then [create a release on GitHub](https://github.com/loopj/home-assistant-vantage/releases/new). Releases are published automatically to HACS when a new GitHub release is created.
