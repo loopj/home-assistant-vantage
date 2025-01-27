@@ -47,6 +47,9 @@ PLATFORMS: list[Platform] = [
 # How long to wait after receiving a system programming event before refreshing
 SYSTEM_PROGRAMMING_DELAY = 30
 
+# Use Home Assistant's default "no verify" SSL context for connections
+Vantage.set_ssl_context_factory(get_default_no_verify_context)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
@@ -55,9 +58,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data[CONF_HOST],
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
-        ssl=(
-            get_default_no_verify_context() if entry.data.get(CONF_SSL, True) else False
-        ),
+        ssl=entry.data.get(CONF_SSL, True),
     )
 
     # Store the client in the hass data store
