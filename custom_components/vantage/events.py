@@ -3,7 +3,7 @@
 from typing import Any
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.models import Button, Task
+from aiovantage.objects import Button, Task
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant

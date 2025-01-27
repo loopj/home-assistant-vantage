@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage, VantageEvent
-from aiovantage.models import Thermostat
+from aiovantage.objects import Thermostat
 
 from homeassistant.components.climate import (
     ATTR_TARGET_TEMP_HIGH,

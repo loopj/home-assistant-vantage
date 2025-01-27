@@ -5,7 +5,7 @@ import functools
 from typing import Any, TypeVar, cast
 
 from aiovantage import Vantage
-from aiovantage.models import Load, LoadGroup, RGBLoadBase
+from aiovantage.objects import Load, LoadGroup, RGBLoadBase
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -57,7 +57,7 @@ class VantageLight(VantageEntity[Load], LightEntity):
     def __post_init__(self) -> None:
         """Initialize the light."""
         # Look up the power profile for this load to determine if it is dimmable
-        power_profile = self.client.power_profiles.get(self.obj.power_profile_id)
+        power_profile = self.client.power_profiles.get(self.obj.power_profile)
 
         # Set up the light based on the power profile
         self._attr_supported_color_modes: set[str] = set()
@@ -205,12 +205,14 @@ class VantageRGBLight(VantageEntity[RGBLoadBase], LightEntity):
         elif ATTR_HS_COLOR in kwargs:
             # Turn on the light with the provided HS color and brightness, default to
             # 100% brightness if not provided
-            hs: tuple[float, float] = kwargs[ATTR_HS_COLOR]
+            hue, saturation = kwargs[ATTR_HS_COLOR]
             level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
             transition = kwargs.get(ATTR_TRANSITION, 0)
 
             await self.async_request_call(
-                self.client.rgb_loads.dissolve_hsl(self.obj.id, *hs, level, transition)
+                self.client.rgb_loads.dissolve_hsl(
+                    self.obj.id, hue, saturation, level, transition
+                )
             )
 
         else:

@@ -2,7 +2,7 @@
 
 from typing import Any
 from aiovantage import Vantage
-from aiovantage.models import Task
+from aiovantage.objects import Task
 import voluptuous as vol
 
 from homeassistant.const import ATTR_ID, ATTR_NAME

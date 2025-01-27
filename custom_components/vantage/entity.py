@@ -11,7 +11,7 @@ from aiovantage.errors import (
     LoginFailedError,
     LoginRequiredError,
 )
-from aiovantage.models import GMem, SystemObject
+from aiovantage.objects import GMem, SystemObject
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -194,10 +194,10 @@ class VantageVariableEntity(VantageEntity[GMem]):
 
         # Attach variable entities to a "variables" virtual device
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.obj.master_id}:variables")},
+            identifiers={(DOMAIN, f"{self.obj.master}:variables")},
             name="Variables",
             manufacturer="Vantage",
             model="Variables",
             entry_type=dr.DeviceEntryType.SERVICE,
-            via_device=(DOMAIN, str(self.obj.master_id)),
+            via_device=(DOMAIN, str(self.obj.master)),
         )
