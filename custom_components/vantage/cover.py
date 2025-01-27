@@ -4,7 +4,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import Blind, BlindGroup
+from aiovantage.objects import Blind, BlindGroup
 
 from homeassistant.components.cover import (
     CoverDeviceClass,
@@ -45,7 +45,7 @@ class VantageCover(VantageEntity[Blind], CoverEntity):
             | CoverEntityFeature.STOP
             | CoverEntityFeature.SET_POSITION
         )
-        match self.obj.type:
+        match self.obj.shade_type:
             case "Drapery":
                 self._attr_device_class = CoverDeviceClass.CURTAIN
             case _:

@@ -4,7 +4,7 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
-from aiovantage.models import (
+from aiovantage.objects import (
     LocationObject,
     Master,
     Parent,
@@ -83,11 +83,11 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     """Build the device info for a Vantage object."""
     device_info = DeviceInfo(
         identifiers={(DOMAIN, str(obj.id))},
-        name=obj.display_name or obj.name,
+        name=obj.display_name,
     )
 
     # Suggest sensible model and manufacturer names
-    parts = obj.vantage_type.split(".", 1)
+    parts = obj.vantage_type().split(".", 1)
     if len(parts) > 1:
         # Vantage CustomDevice objects take the form "manufacturer.model"
         device_info["manufacturer"] = parts[0]
@@ -100,8 +100,8 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     # Suggest an area for LocationObject devices
     if (
         isinstance(obj, LocationObject)
-        and obj.area_id
-        and (area := client.areas.get(obj.area_id))
+        and obj.area
+        and (area := client.areas.get(obj.area))
     ):
         device_info["suggested_area"] = area.name
 
@@ -121,7 +121,7 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
             device_info["via_device"] = (DOMAIN, str(obj.parent.id))
         else:
             # Attach the master device for all other objects
-            device_info["via_device"] = (DOMAIN, str(obj.master_id))
+            device_info["via_device"] = (DOMAIN, str(obj.master))
 
     # Attach the firmware version for Master devices
     if isinstance(obj, Master):

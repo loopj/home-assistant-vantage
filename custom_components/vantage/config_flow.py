@@ -156,7 +156,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.controller.host,
             self.username,
             self.password,
-            self.controller.supports_ssl,
+            ssl=self.controller.supports_ssl,
         )
 
         if serial_number is None:
@@ -242,7 +242,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> dict[str, str] | None:
         """Validate the credentials for a Vantage controller, returning errors if invalid."""
         try:
-            if not await validate_credentials(host, username, password, ssl):
+            if not await validate_credentials(host, username, password, ssl=ssl):
                 return {"base": "invalid_auth"}
         except ClientConnectionError:
             return {"base": "cannot_connect"}

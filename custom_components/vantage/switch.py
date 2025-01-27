@@ -5,7 +5,7 @@ import functools
 from typing import Any
 
 from aiovantage import Vantage
-from aiovantage.models import GMem, Load
+from aiovantage.objects import GMem, Load
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry

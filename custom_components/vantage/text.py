@@ -4,7 +4,7 @@ from collections.abc import Callable
 import functools
 
 from aiovantage import Vantage
-from aiovantage.models import GMem
+from aiovantage.objects import GMem
 
 from homeassistant.components.text import TextEntity
 from homeassistant.config_entries import ConfigEntry

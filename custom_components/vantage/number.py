@@ -4,7 +4,7 @@ import functools
 from collections.abc import Callable
 
 from aiovantage import Vantage
-from aiovantage.models import GMem
+from aiovantage.objects import GMem
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
