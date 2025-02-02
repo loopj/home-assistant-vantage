@@ -39,7 +39,7 @@ def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
             payload["station_name"] = station.name
 
         hass.bus.async_fire(
-            EVENT_BUTTON_PRESSED if obj.pressed else EVENT_BUTTON_RELEASED,
+            EVENT_BUTTON_PRESSED if obj.is_down else EVENT_BUTTON_RELEASED,
             payload,
         )
 

@@ -144,7 +144,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
 
     async def async_update(self) -> None:
         """Update the state of an entity manully, typically when polling."""
-        await self.async_request_call(self.controller.fetch_object_state(self.obj.id))
+        await self.async_request_call(self.obj.fetch_state())
 
     @callback
     def _handle_event(

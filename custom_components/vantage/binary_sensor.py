@@ -39,4 +39,4 @@ class VantageDryContact(VantageEntity[DryContact], BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
-        return self.obj.triggered
+        return self.obj.is_down

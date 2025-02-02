@@ -1,6 +1,5 @@
 """Support for Vantage text entities."""
 
-from collections.abc import Callable
 import functools
 
 from aiovantage.objects import GMem
@@ -25,7 +24,9 @@ async def async_setup_entry(
     )
 
     # Register all text entities
-    gmem_filter: Callable[[GMem], bool] = lambda obj: obj.is_str
+    def gmem_filter(obj: GMem) -> bool:
+        return obj.is_str
+
     register_items(vantage.gmem, VantageTextVariable, gmem_filter)
 
 
@@ -42,4 +43,4 @@ class VantageTextVariable(VantageVariableEntity, TextEntity):
 
     async def async_set_value(self, value: str) -> None:
         """Change the value."""
-        await self.async_request_call(self.client.gmem.set_value(self.obj.id, value))
+        await self.async_request_call(self.obj.set_value(value))

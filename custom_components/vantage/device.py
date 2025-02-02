@@ -124,7 +124,7 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
             device_info["via_device"] = (DOMAIN, str(obj.master))
 
     # Attach the firmware version for Master devices
-    if isinstance(obj, Master):
-        device_info["sw_version"] = obj.firmware_version
+    # if isinstance(obj, Master):
+    #     device_info["sw_version"] = obj.firmware_version
 
     return device_info

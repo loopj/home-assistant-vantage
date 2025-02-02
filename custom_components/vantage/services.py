@@ -34,7 +34,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         vantage: Vantage
         for vantage in hass.data[DOMAIN].values():
             if task := _get_task(vantage, task_id_or_name):
-                await vantage.tasks.start(task.id)
+                await task.start()
                 task_found = True
 
         if not task_found:
@@ -50,7 +50,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         vantage: Vantage
         for vantage in hass.data[DOMAIN].values():
             if task := _get_task(vantage, task_id_or_name):
-                await vantage.tasks.stop(task.id)
+                await task.stop()
                 task_found = True
 
         if not task_found:
