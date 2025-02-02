@@ -68,7 +68,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
         async_register_services(hass)
 
         # Add Vantage devices (controllers, modules, stations) to the device registry
-        async_setup_devices(hass, entry)
+        await async_setup_devices(hass, entry)
 
         # Generate events for button presses
         async_setup_events(hass, entry)
