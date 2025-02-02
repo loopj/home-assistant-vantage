@@ -5,11 +5,9 @@ from decimal import Decimal
 import functools
 import socket
 
-from aiovantage import Vantage
 from aiovantage.objects import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     LIGHT_LUX,
     EntityCategory,
@@ -21,17 +19,19 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, async_register_vantage_objects
 
 FOOT_CANDLES_TO_LUX = 10.7639
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: VantageConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Vantage sensor entities from config entry."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage = entry.runtime_data.client
     register_items = functools.partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )

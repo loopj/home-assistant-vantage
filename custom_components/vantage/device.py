@@ -12,19 +12,19 @@ from aiovantage.objects import (
     SystemObject,
 )
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 
+from .config_entry import VantageConfigEntry
 from .const import DOMAIN
 
 T = TypeVar("T", bound=SystemObject)
 
 
-def async_setup_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
+def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Set up Vantage devices in the device registry."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage = entry.runtime_data.client
     dev_reg = dr.async_get(hass)
 
     @callback

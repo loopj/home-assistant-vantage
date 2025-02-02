@@ -2,14 +2,13 @@
 
 from typing import Any
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import VantageEvent
 from aiovantage.objects import Button, Task
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .config_entry import VantageConfigEntry
 from .const import (
-    DOMAIN,
     EVENT_BUTTON_PRESSED,
     EVENT_BUTTON_RELEASED,
     EVENT_TASK_STARTED,
@@ -18,9 +17,9 @@ from .const import (
 )
 
 
-def async_setup_events(hass: HomeAssistant, entry: ConfigEntry) -> None:
+def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Set up Vantage events from a config entry."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage = entry.runtime_data.client
 
     def handle_button_event(_event: VantageEvent, obj: Button, data: Any) -> None:
         """Handle button press/release events."""

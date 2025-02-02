@@ -13,13 +13,13 @@ from aiovantage.errors import (
 )
 from aiovantage.objects import GMem, SystemObject
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .config_entry import VantageConfigEntry
 from .const import DOMAIN
 from .device import vantage_device_info
 
@@ -32,14 +32,14 @@ T = TypeVar("T")
 
 def async_register_vantage_objects(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
     controller: BaseController[Any],
     entity_class: type["VantageEntity[Any]"],
     object_filter: Callable[[SystemObjectT], bool] | None = None,
 ) -> None:
     """Add entities to HA from a Vantage controller, add a callback for new entities."""
-    vantage: Vantage = hass.data[DOMAIN][config_entry.entry_id]
+    vantage = config_entry.runtime_data.client
 
     # Add all current objects in the controller that match the filter
     objects = controller.filter(object_filter) if object_filter else controller
@@ -57,9 +57,9 @@ def async_register_vantage_objects(
     )
 
 
-def async_cleanup_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Remove entities from HA that are no longer in the Vantage controller."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage = entry.runtime_data.client
     ent_reg = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
         # Entity IDs always start with the object ID, followed by an optional suffix
@@ -77,7 +77,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
     def __init__(
         self,
         client: Vantage,
-        config_entry: ConfigEntry,
+        config_entry: VantageConfigEntry,
         controller: BaseController[Any],
         obj: SystemObjectT,
     ):

@@ -3,7 +3,6 @@
 import functools
 from typing import Any
 
-from aiovantage import Vantage
 from aiovantage.objects import Blind, BlindGroup
 
 from homeassistant.components.cover import (
@@ -12,19 +11,20 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
     ATTR_POSITION,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: VantageConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Vantage cover entities from config entry."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage = entry.runtime_data.client
     register_items = functools.partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )
