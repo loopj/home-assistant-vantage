@@ -56,7 +56,7 @@ async def async_setup_entry(
     """Set up Vantage cover entities from config entry."""
     vantage = entry.runtime_data.client
     register_items = functools.partial(
-        async_register_vantage_objects, hass, entry, async_add_entities
+        async_register_vantage_objects, entry, async_add_entities
     )
 
     # Set up all climate entities

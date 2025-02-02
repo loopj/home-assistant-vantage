@@ -31,28 +31,27 @@ T = TypeVar("T")
 
 
 def async_register_vantage_objects(
-    hass: HomeAssistant,
-    config_entry: VantageConfigEntry,
+    entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
     controller: BaseController[Any],
     entity_class: type["VantageEntity[Any]"],
     object_filter: Callable[[SystemObjectT], bool] | None = None,
 ) -> None:
     """Add entities to HA from a Vantage controller, add a callback for new entities."""
-    vantage = config_entry.runtime_data.client
+    vantage = entry.runtime_data.client
 
     # Add all current objects in the controller that match the filter
     objects = controller.filter(object_filter) if object_filter else controller
-    entities = [entity_class(vantage, config_entry, controller, obj) for obj in objects]
+    entities = [entity_class(vantage, entry, controller, obj) for obj in objects]
     async_add_entities(entities)
 
     # Register a callback for objects added to this controller that match the filter
     @callback
     def async_add_entity(_type: VantageEvent, obj: SystemObjectT, _data: Any) -> None:
         if object_filter is None or object_filter(obj):
-            async_add_entities([entity_class(vantage, config_entry, controller, obj)])
+            async_add_entities([entity_class(vantage, entry, controller, obj)])
 
-    config_entry.async_on_unload(
+    entry.async_on_unload(
         controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
     )
 

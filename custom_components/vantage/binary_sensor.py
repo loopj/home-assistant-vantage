@@ -19,9 +19,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Vantage binary sensor entities from a config entry."""
     vantage = entry.runtime_data.client
-    register_items = partial(
-        async_register_vantage_objects, hass, entry, async_add_entities
-    )
+    register_items = partial(async_register_vantage_objects, entry, async_add_entities)
 
     # Set up all cover entities
     register_items(vantage.dry_contacts, VantageDryContact)

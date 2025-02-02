@@ -20,7 +20,7 @@ async def async_setup_entry(
     """Set up Vantage text entities from config entry."""
     vantage = entry.runtime_data.client
     register_items = functools.partial(
-        async_register_vantage_objects, hass, entry, async_add_entities
+        async_register_vantage_objects, entry, async_add_entities
     )
 
     # Register all text entities
