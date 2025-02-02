@@ -14,9 +14,10 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components import zeroconf
-from homeassistant.config_entries import ConfigEntry, ConfigFlowResult
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_SSL, CONF_USERNAME
 
+from .config_entry import VantageConfigEntry
 from .const import DOMAIN
 
 USER_SCHEMA = vol.Schema(
@@ -43,7 +44,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     controller: VantageControllerDetails | None = None
     username: str | None = None
     password: str | None = None
-    reauth_entry: ConfigEntry | None = None
+    reauth_entry: VantageConfigEntry | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

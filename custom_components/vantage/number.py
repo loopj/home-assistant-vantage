@@ -3,24 +3,25 @@
 import functools
 from collections.abc import Callable
 
-from aiovantage import Vantage
 from aiovantage.objects import GMem
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, LIGHT_LUX, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, LOGGER
+from .config_entry import VantageConfigEntry
+from .const import LOGGER
 from .entity import VantageVariableEntity, async_register_vantage_objects
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: VantageConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Vantage number entities from config entry."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage = entry.runtime_data.client
     register_items = functools.partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )

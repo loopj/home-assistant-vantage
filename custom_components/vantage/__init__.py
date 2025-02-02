@@ -11,11 +11,7 @@ from aiovantage.errors import (
 )
 from aiovantage.objects import Master
 
-from homeassistant.config_entries import (
-    ConfigEntry,
-    ConfigEntryAuthFailed,
-    ConfigEntryNotReady,
-)
+from homeassistant.config_entries import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.const import (
     CONF_HOST,
     CONF_PASSWORD,
@@ -26,7 +22,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.util.ssl import get_default_no_verify_context
 
-from .const import DOMAIN
+from .config_entry import VantageConfigEntry, VantageData
 from .device import async_setup_devices
 from .entity import async_cleanup_entities
 from .events import async_setup_events
@@ -51,7 +47,7 @@ SYSTEM_PROGRAMMING_DELAY = 30
 Vantage.set_ssl_context_factory(get_default_no_verify_context)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
     # Create a Vantage client
     vantage = Vantage(
@@ -61,8 +57,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ssl=entry.data.get(CONF_SSL, True),
     )
 
-    # Store the client in the hass data store
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = vantage
+    # Store the client in the config entry's runtime data
+    entry.runtime_data = VantageData(client=vantage)
 
     try:
         # Initialize and fetch all objects
@@ -118,10 +114,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> bool:
     """Unload a config entry."""
-    vantage: Vantage = hass.data[DOMAIN].pop(entry.entry_id, None)
-    if vantage:
-        vantage.close()
+    # Close the Vantage client connection
+    entry.runtime_data.client.close()
 
+    # Unload all platforms
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

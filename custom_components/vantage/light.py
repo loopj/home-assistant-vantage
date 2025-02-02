@@ -4,7 +4,6 @@ from collections.abc import Callable
 import functools
 from typing import Any, TypeVar, cast
 
-from aiovantage import Vantage
 from aiovantage.objects import Load, LoadGroup, RGBLoadBase
 
 from homeassistant.components.light import (
@@ -18,14 +17,14 @@ from homeassistant.components.light import (
     LightEntity,
     LightEntityFeature,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util.color import brightness_to_value, value_to_brightness
 
-from .const import DOMAIN, LOGGER
+from .config_entry import VantageConfigEntry
+from .const import LOGGER
 from .entity import VantageEntity, async_register_vantage_objects
 
 # TypeVar for RGB/RGBW color tuples
@@ -36,10 +35,12 @@ LEVEL_RANGE = (1, 100)
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: VantageConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Vantage light entities from config entry."""
-    vantage: Vantage = hass.data[DOMAIN][entry.entry_id]
+    vantage = entry.runtime_data.client
     register_items = functools.partial(
         async_register_vantage_objects, hass, entry, async_add_entities
     )

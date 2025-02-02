@@ -1,21 +1,21 @@
 """Migration functions for the Vantage integration."""
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
+from .config_entry import VantageConfigEntry
 from .const import LOGGER
 
 
-async def async_migrate_data(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_migrate_data(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Run all Vantage data migrations."""
 
     async_delete_back_boxes(hass, entry)
     async_delete_serial_number_entities(hass, entry)
 
 
-def async_delete_back_boxes(hass: HomeAssistant, entry: ConfigEntry) -> None:
+def async_delete_back_boxes(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Delete back boxes from the device registry."""
     dev_reg = dr.async_get(hass)
 
@@ -33,7 +33,7 @@ def async_delete_back_boxes(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 def async_delete_serial_number_entities(
-    hass: HomeAssistant, entry: ConfigEntry
+    hass: HomeAssistant, entry: VantageConfigEntry
 ) -> None:
     """Delete serial number entities from the entity registry."""
     ent_reg = er.async_get(hass)
