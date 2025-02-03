@@ -1,7 +1,6 @@
 """Support for Vantage number entities."""
 
 import functools
-from collections.abc import Callable
 
 from aiovantage.objects import GMem
 
@@ -23,11 +22,13 @@ async def async_setup_entry(
     """Set up Vantage number entities from config entry."""
     vantage = entry.runtime_data.client
     register_items = functools.partial(
-        async_register_vantage_objects, hass, entry, async_add_entities
+        async_register_vantage_objects, entry, async_add_entities
     )
 
     # Register all number entities
-    gmem_filter: Callable[[GMem], bool] = lambda obj: obj.is_int or obj.is_fixed
+    def gmem_filter(obj: GMem) -> bool:
+        return obj.is_int or obj.is_fixed
+
     register_items(vantage.gmem, VantageNumberVariable, gmem_filter)
 
 
@@ -106,4 +107,4 @@ class VantageNumberVariable(VantageVariableEntity, NumberEntity):
         else:
             value = int(value)
 
-        await self.async_request_call(self.client.gmem.set_value(self.obj.id, value))
+        await self.async_request_call(self.obj.set_value(value))

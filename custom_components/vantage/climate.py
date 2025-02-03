@@ -30,21 +30,21 @@ VANTAGE_MAX_TEMP = 40
 
 # Map Vantage enums to HA enums
 VANTAGE_HVAC_MODE_MAP = {
-    Thermostat.OperationMode.HEAT: HVACMode.HEAT,
-    Thermostat.OperationMode.COOL: HVACMode.COOL,
-    Thermostat.OperationMode.AUTO: HVACMode.HEAT_COOL,
-    Thermostat.OperationMode.OFF: HVACMode.OFF,
+    Thermostat.OperationMode.Heat: HVACMode.HEAT,
+    Thermostat.OperationMode.Cool: HVACMode.COOL,
+    Thermostat.OperationMode.Auto: HVACMode.HEAT_COOL,
+    Thermostat.OperationMode.Off: HVACMode.OFF,
 }
 
 VANTAGE_HVAC_ACTION_MAP = {
-    Thermostat.Status.HEATING: HVACAction.HEATING,
-    Thermostat.Status.COOLING: HVACAction.COOLING,
-    Thermostat.Status.OFF: HVACAction.OFF,
+    Thermostat.Status.Heating: HVACAction.HEATING,
+    Thermostat.Status.Cooling: HVACAction.COOLING,
+    Thermostat.Status.Off: HVACAction.OFF,
 }
 
 VANTAGE_FAN_MODE_MAP = {
-    Thermostat.FanMode.AUTO: FAN_AUTO,
-    Thermostat.FanMode.ON: FAN_ON,
+    Thermostat.FanMode.Off: FAN_AUTO,
+    Thermostat.FanMode.On: FAN_ON,
 }
 
 
@@ -56,7 +56,7 @@ async def async_setup_entry(
     """Set up Vantage cover entities from config entry."""
     vantage = entry.runtime_data.client
     register_items = functools.partial(
-        async_register_vantage_objects, hass, entry, async_add_entities
+        async_register_vantage_objects, entry, async_add_entities
     )
 
     # Set up all climate entities
@@ -177,9 +177,7 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             LOGGER.error("Invalid mode for async_set_hvac_mode: %s", hvac_mode)
             return
 
-        await self.async_request_call(
-            self.client.thermostats.set_operation_mode(self.obj.id, vantage_hvac_mode)
-        )
+        await self.async_request_call(self.obj.set_operation_mode(vantage_hvac_mode))
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
@@ -192,9 +190,7 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             LOGGER.error("Invalid mode for async_set_fan_mode: %s", fan_mode)
             return
 
-        await self.async_request_call(
-            self.client.thermostats.set_fan_mode(self.obj.id, vantage_fan_mode)
-        )
+        await self.async_request_call(self.obj.set_fan_mode(vantage_fan_mode))
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
@@ -203,21 +199,12 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
         temp = kwargs.get(ATTR_TEMPERATURE)
 
         if self.hvac_mode == HVACMode.HEAT_COOL and low_temp and high_temp:
-            await self.async_request_call(
-                self.client.thermostats.set_cool_set_point(self.obj.id, high_temp)
-            )
-
-            await self.async_request_call(
-                self.client.thermostats.set_heat_set_point(self.obj.id, low_temp)
-            )
+            await self.async_request_call(self.obj.set_cool_set_point(high_temp))
+            await self.async_request_call(self.obj.set_heat_set_point(low_temp))
         elif self.hvac_mode == HVACMode.HEAT and temp:
-            await self.async_request_call(
-                self.client.thermostats.set_heat_set_point(self.obj.id, temp)
-            )
+            await self.async_request_call(self.obj.set_heat_set_point(temp))
         elif self.hvac_mode == HVACMode.COOL and temp:
-            await self.async_request_call(
-                self.client.thermostats.set_cool_set_point(self.obj.id, temp)
-            )
+            await self.async_request_call(self.obj.set_cool_set_point(temp))
         else:
             LOGGER.error("Invalid arguments for async_set_temperature in %s", kwargs)
 

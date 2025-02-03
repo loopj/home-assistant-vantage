@@ -1,6 +1,7 @@
 """Support for Vantage devices."""
 
 from typing import Any, Protocol, TypeVar, runtime_checkable
+from collections.abc import Awaitable, Callable
 
 from aiovantage import Vantage, VantageEvent
 from aiovantage.controllers import BaseController
@@ -12,7 +13,7 @@ from aiovantage.objects import (
     SystemObject,
 )
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 
@@ -22,46 +23,56 @@ from .const import DOMAIN
 T = TypeVar("T", bound=SystemObject)
 
 
-def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
+async def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Set up Vantage devices in the device registry."""
     vantage = entry.runtime_data.client
     dev_reg = dr.async_get(hass)
 
-    @callback
-    def remove_device(device_id: str) -> None:
-        """Remove device from the registry."""
-        if device := dev_reg.async_get_device({(DOMAIN, device_id)}):
-            dev_reg.async_remove_device(device.id)
+    async def register_items(
+        controller: BaseController[T],
+        extra_info_fn: Callable[[T], Awaitable[DeviceInfo]] | None = None,
+    ) -> None:
+        # Register a device in the device registry
+        async def add_device(obj: T) -> dr.DeviceEntry:
+            device_info = vantage_device_info(vantage, obj)
+            if extra_info_fn:
+                device_info.update(await extra_info_fn(obj))
 
-    @callback
-    def register_items(controller: BaseController[T]) -> None:
-        @callback
-        def add_device(obj: T) -> dr.DeviceEntry:
-            """Register a Vantage device in the device registry."""
             return dev_reg.async_get_or_create(
-                config_entry_id=entry.entry_id, **vantage_device_info(vantage, obj)
+                config_entry_id=entry.entry_id, **device_info
             )
 
-        @callback
-        def handle_device_event(event_type: VantageEvent, obj: T, _data: Any) -> None:
-            """Handle a Vantage event for a device."""
+        # Remove a device from the device registry
+        def remove_device(obj: T) -> None:
+            if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
+                dev_reg.async_remove_device(device.id)
+
+        # Handle device added, updated, or removed events
+        async def handle_device_event(
+            event_type: VantageEvent, obj: T, _data: Any
+        ) -> None:
             if event_type == VantageEvent.OBJECT_DELETED:
-                remove_device(str(obj.id))
+                remove_device(obj)
             else:
-                add_device(obj)
+                await add_device(obj)
 
         # Add all current members of this controller
         for obj in controller:
-            add_device(obj)
+            await add_device(obj)
 
         # Register a callback for new members
         entry.async_on_unload(controller.subscribe(handle_device_event))
 
+    # Register "master" devices, additionally fetching the firmware version
+    async def extra_master_info(obj: Master) -> DeviceInfo:
+        return DeviceInfo(sw_version=await obj.get_application_version())
+
+    await register_items(vantage.masters, extra_master_info)
+
     # Register "parent" devices (controllers, modules, port devices, and stations)
-    register_items(vantage.masters)
-    register_items(vantage.modules)
-    register_items(vantage.port_devices)
-    register_items(vantage.stations)
+    await register_items(vantage.modules)
+    await register_items(vantage.port_devices)
+    await register_items(vantage.stations)
 
     # Clean up any devices for objects that no longer exist on the Vantage controller
     for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
@@ -122,9 +133,5 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
         else:
             # Attach the master device for all other objects
             device_info["via_device"] = (DOMAIN, str(obj.master))
-
-    # Attach the firmware version for Master devices
-    if isinstance(obj, Master):
-        device_info["sw_version"] = obj.firmware_version
 
     return device_info

@@ -1,6 +1,5 @@
 """Support for Vantage switch entities."""
 
-from collections.abc import Callable
 import functools
 from typing import Any
 
@@ -22,15 +21,19 @@ async def async_setup_entry(
     """Set up Vantage switch entities from config entry."""
     vantage = entry.runtime_data.client
     register_items = functools.partial(
-        async_register_vantage_objects, hass, entry, async_add_entities
+        async_register_vantage_objects, entry, async_add_entities
     )
 
     # Register Load switch entities
-    load_filter: Callable[[Load], bool] = lambda obj: obj.is_relay or obj.is_motor
+    def load_filter(obj: Load) -> bool:
+        return obj.is_relay or obj.is_motor
+
     register_items(vantage.loads, VantageLoadSwitch, load_filter)
 
     # Register GMem switch entities
-    gmem_filter: Callable[[GMem], bool] = lambda obj: obj.is_bool
+    def gmem_filter(obj: GMem) -> bool:
+        return obj.is_bool
+
     register_items(vantage.gmem, VantageVariableSwitch, gmem_filter)
 
 
@@ -44,11 +47,11 @@ class VantageLoadSwitch(VantageEntity[Load], SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.async_request_call(self.client.loads.turn_on(self.obj.id))
+        await self.async_request_call(self.obj.turn_on())
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.async_request_call(self.client.loads.turn_off(self.obj.id))
+        await self.async_request_call(self.obj.turn_off())
 
 
 class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
@@ -57,15 +60,15 @@ class VantageVariableSwitch(VantageVariableEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if entity is on."""
-        if isinstance(self.obj.value, bool):
-            return self.obj.value
+        if isinstance(self.obj.value, int):
+            return bool(self.obj.value)
 
         return None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        await self.async_request_call(self.client.gmem.set_value(self.obj.id, True))
+        await self.async_request_call(self.obj.set_value(True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        await self.async_request_call(self.client.gmem.set_value(self.obj.id, False))
+        await self.async_request_call(self.obj.set_value(False))

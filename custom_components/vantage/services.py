@@ -5,6 +5,7 @@ from aiovantage import Vantage
 from aiovantage.objects import Task
 import voluptuous as vol
 
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ID, ATTR_NAME
 from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
@@ -26,37 +27,45 @@ TASK_SCHEMA = vol.All(
 def async_register_services(hass: HomeAssistant) -> None:
     """Register services for Vantage integration."""
 
+    def find_task(id_or_name: Any) -> Task | None:
+        # Build a query for the task
+        if isinstance(id_or_name, int):
+            query = {"vid": id_or_name}
+        elif isinstance(id_or_name, str):
+            query = {"name": id_or_name}
+        else:
+            return None
+
+        # Search for the task in all loaded config entries
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            if entry.state is not ConfigEntryState.LOADED:
+                continue
+
+            vantage: Vantage = entry.runtime_data.client
+            if task := vantage.tasks.get(**query):
+                return task
+
+        return None
+
     async def start_task(call: ServiceCall) -> None:
         """Start a Vantage task by id or name."""
         task_id_or_name = call.data.get(ATTR_ID) or call.data.get(ATTR_NAME)
-        task_found = False
 
-        vantage: Vantage
-        for vantage in hass.data[DOMAIN].values():
-            if task := _get_task(vantage, task_id_or_name):
-                await vantage.tasks.start(task.id)
-                task_found = True
+        if task := find_task(task_id_or_name):
+            await task.start()
+            return
 
-        if not task_found:
-            LOGGER.warning(
-                "Task '%s' not found in any Vantage controller", task_id_or_name
-            )
+        LOGGER.warning("Task '%s' not found in any Vantage controller", task_id_or_name)
 
     async def stop_task(call: ServiceCall) -> None:
         """Stop a Vantage task by id or name."""
         task_id_or_name = call.data.get(ATTR_ID) or call.data.get(ATTR_NAME)
-        task_found = False
 
-        vantage: Vantage
-        for vantage in hass.data[DOMAIN].values():
-            if task := _get_task(vantage, task_id_or_name):
-                await vantage.tasks.stop(task.id)
-                task_found = True
+        if task := find_task(task_id_or_name):
+            await task.stop()
+            return
 
-        if not task_found:
-            LOGGER.warning(
-                "Task '%s' not found in any Vantage controller", task_id_or_name
-            )
+        LOGGER.warning("Task '%s' not found in any Vantage controller", task_id_or_name)
 
     # Register services
     if not hass.services.has_service(DOMAIN, SERVICE_START_TASK):
@@ -68,14 +77,3 @@ def async_register_services(hass: HomeAssistant) -> None:
         hass.services.async_register(
             DOMAIN, SERVICE_STOP_TASK, stop_task, schema=TASK_SCHEMA
         )
-
-
-def _get_task(vantage: Vantage, id_or_name: Any | None) -> Task | None:
-    """Get the task from the service call."""
-    if isinstance(id_or_name, int):
-        return vantage.tasks.get(id_or_name)
-
-    if isinstance(id_or_name, str):
-        return vantage.tasks.get(name=id_or_name)
-
-    return None
