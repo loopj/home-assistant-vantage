@@ -23,7 +23,7 @@ def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
 
     def handle_button_event(_event: VantageEvent, obj: Button, data: Any) -> None:
         """Handle button press/release events."""
-        if "pressed" not in data["attrs_changed"]:
+        if "state" not in data["attrs_changed"]:
             return
 
         payload = {
@@ -45,7 +45,7 @@ def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
 
     def handle_task_event(_event: VantageEvent, obj: Task, data: Any) -> None:
         """Handle task events."""
-        if "is_running" in data["attrs_changed"]:
+        if "running" in data["attrs_changed"]:
             # Fire task started/stopped event
             payload = {
                 "task_id": obj.id,
@@ -53,7 +53,7 @@ def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
             }
 
             hass.bus.async_fire(
-                EVENT_TASK_STARTED if obj.is_running else EVENT_TASK_STOPPED,
+                EVENT_TASK_STARTED if obj.running else EVENT_TASK_STOPPED,
                 payload,
             )
 
