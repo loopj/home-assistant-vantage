@@ -1,10 +1,10 @@
 """Support for Vantage light entities."""
 
-import functools
-from typing import Any, TypeVar, cast
+from typing import Any, cast, override
 
+from aiovantage import Vantage
+from aiovantage.controllers import RGBLoadTypes
 from aiovantage.objects import Load, LoadGroup
-from aiovantage.controllers.rgb_loads import RGBLoadTypes
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -18,17 +18,12 @@ from homeassistant.components.light import (
     LightEntityFeature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util.color import brightness_to_value, value_to_brightness
 
 from .config_entry import VantageConfigEntry
 from .const import LOGGER
-from .entity import VantageEntity, async_register_vantage_objects
-
-# TypeVar for RGB/RGBW color tuples
-ColorT = TypeVar("ColorT", tuple[int, int, int], tuple[int, int, int, int])
+from .entity import VantageEntity
 
 # Vantage level range for converting between HA brightness and Vantage levels
 LEVEL_RANGE = (1, 100)
@@ -39,33 +34,31 @@ async def async_setup_entry(
     entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Vantage light entities from config entry."""
+    """Set up Vantage light entities from a config entry."""
     vantage = entry.runtime_data.client
-    register_items = functools.partial(
-        async_register_vantage_objects, entry, async_add_entities
+
+    # Add every "light" load as a light entity
+    VantageLoadLightEntity.add_entities(
+        entry, async_add_entities, vantage.loads, lambda load: load.is_light
     )
 
-    # Set up all light-type objects
-    def load_filter(obj: Load) -> bool:
-        return obj.is_light
+    # Add every load group as a light entity
+    VantageLoadGroupLightEntity.add_entities(
+        entry, async_add_entities, vantage.load_groups
+    )
 
-    register_items(vantage.loads, VantageLight, load_filter)
-    register_items(vantage.rgb_loads, VantageRGBLight)
-    register_items(vantage.load_groups, VantageLightGroup)
+    # Add every rgb load as a light entity
+    VantageRGBLoadLightEntity.add_entities(entry, async_add_entities, vantage.rgb_loads)
 
 
-class VantageLight(VantageEntity[Load], LightEntity):
+class VantageLoadLightEntity(VantageEntity[Load], LightEntity):
     """Vantage load light entity."""
 
+    @override
     def __post_init__(self) -> None:
-        """Initialize the light."""
-        # Look up the power profile for this load to determine if it is dimmable
-        power_profile = self.client.power_profiles.get(self.obj.power_profile)
-
         # Set up the light based on the power profile
-        self._attr_supported_color_modes: set[str] = set()
-
-        if power_profile and power_profile.is_dimmable:
+        self._attr_supported_color_modes: set[ColorMode] = set()
+        if _is_dimmable_load(self.client, self.obj):
             self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
             self._attr_color_mode = ColorMode.BRIGHTNESS
             self._attr_supported_features |= LightEntityFeature.TRANSITION
@@ -74,33 +67,70 @@ class VantageLight(VantageEntity[Load], LightEntity):
             self._attr_color_mode = ColorMode.ONOFF
 
     @property
+    @override
     def is_on(self) -> bool | None:
-        """Return True if entity is on."""
         return self.obj.is_on
 
     @property
+    @override
     def brightness(self) -> int | None:
-        """Return the brightness of this light between 0..255."""
         if self.obj.level is None:
             return None
 
         return value_to_brightness(LEVEL_RANGE, float(self.obj.level))
 
+    @override
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the light on."""
         transition = kwargs.get(ATTR_TRANSITION, 0)
         level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
 
         await self.async_request_call(self.obj.turn_on(transition, level))
 
+    @override
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the light off."""
         transition = kwargs.get(ATTR_TRANSITION, 0)
 
         await self.async_request_call(self.obj.turn_off(transition))
 
 
-class VantageRGBLight(VantageEntity[RGBLoadTypes], LightEntity):
+class VantageLoadGroupLightEntity(VantageEntity[LoadGroup], LightEntity):
+    """Vantage load group light entity."""
+
+    @override
+    def __post_init__(self) -> None:
+        self._attr_icon = "mdi:lightbulb-group"
+        self._attr_supported_color_modes: set[str] = {ColorMode.BRIGHTNESS}
+        self._attr_color_mode = ColorMode.BRIGHTNESS
+        self._attr_supported_features |= LightEntityFeature.TRANSITION
+
+    @property
+    @override
+    def is_on(self) -> bool | None:
+        return self.obj.is_on
+
+    @property
+    @override
+    def brightness(self) -> int | None:
+        if self.obj.level is None:
+            return None
+
+        return value_to_brightness(LEVEL_RANGE, float(self.obj.level))
+
+    @override
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        transition = kwargs.get(ATTR_TRANSITION, 0)
+        level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
+
+        await self.async_request_call(self.obj.turn_on(transition, level))
+
+    @override
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        transition = kwargs.get(ATTR_TRANSITION, 0)
+
+        await self.async_request_call(self.obj.turn_off(transition))
+
+
+class VantageRGBLoadLightEntity(VantageEntity[RGBLoadTypes], LightEntity):
     """Vantage RGB load light entity."""
 
     def __post_init__(self) -> None:
@@ -139,50 +169,50 @@ class VantageRGBLight(VantageEntity[RGBLoadTypes], LightEntity):
                 )
 
     @property
+    @override
     def is_on(self) -> bool | None:
-        """Return True if entity is on."""
         return self.obj.is_on
 
     @property
+    @override
     def brightness(self) -> int | None:
-        """Return the brightness of this light between 0..255."""
         if self.obj.level is None:
             return None
 
         return value_to_brightness(LEVEL_RANGE, float(self.obj.level))
 
     @property
+    @override
     def hs_color(self) -> tuple[float, float] | None:
-        """Return the hue and saturation color value [float, float]."""
         if self.obj.hsl is None:
             return None
 
         return self.obj.hsl[:2]
 
     @property
+    @override
     def rgb_color(self) -> tuple[int, int, int] | None:
-        """Return the rgb color value [int, int, int]."""
         return self.obj.rgb
 
     @property
+    @override
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
-        """Return the rgbw color value [int, int, int, int]."""
         return self.obj.rgbw
 
     @property
+    @override
     def color_temp_kelvin(self) -> int | None:
-        """Return the CT color value in Kelvin."""
         return self.obj.color_temp
 
+    @override
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the light on."""
         if ATTR_RGBW_COLOR in kwargs:
             # Turn on the light with the provided RGBW color
             rgbw: tuple[int, int, int, int] = kwargs[ATTR_RGBW_COLOR]
 
             # Scale the brightness of the color if provided
             if brightness := kwargs.get(ATTR_BRIGHTNESS) is not None:
-                rgbw = scale_color_brightness(rgbw, brightness)
+                rgbw = _scale_color_brightness(rgbw, brightness)
 
             await self.async_request_call(self.obj.set_rgbw(*rgbw))
 
@@ -193,7 +223,7 @@ class VantageRGBLight(VantageEntity[RGBLoadTypes], LightEntity):
 
             # Scale the brightness of the color if provided
             if brightness := kwargs.get(ATTR_BRIGHTNESS) is not None:
-                rgb = scale_color_brightness(rgb, brightness)
+                rgb = _scale_color_brightness(rgb, brightness)
 
             await self.async_request_call(self.obj.dissolve_rgb(*rgb, transition))
 
@@ -221,64 +251,22 @@ class VantageRGBLight(VantageEntity[RGBLoadTypes], LightEntity):
 
             await self.async_request_call(self.obj.turn_on(transition, level))
 
+    @override
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the light off."""
         transition = kwargs.get(ATTR_TRANSITION, 0)
 
         await self.async_request_call(self.obj.turn_off(transition))
 
 
-class VantageLightGroup(VantageEntity[LoadGroup], LightEntity):
-    """Vantage light group entity."""
-
-    _attr_icon = "mdi:lightbulb-group"
-
-    def __post_init__(self) -> None:
-        """Initialize a Vantage light group."""
-        self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
-        self._attr_color_mode = ColorMode.BRIGHTNESS
-        self._attr_supported_features |= LightEntityFeature.TRANSITION
-
-    @property
-    def device_info(self) -> DeviceInfo | None:
-        """Return device specific attributes."""
-        device_info = super().device_info
-
-        if device_info:
-            device_info["entry_type"] = dr.DeviceEntryType.SERVICE
-
-        return device_info
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return True if entity is on."""
-        return self.obj.is_on
-
-    @property
-    def brightness(self) -> int | None:
-        """Return the brightness of this light between 0..255."""
-        if self.obj.level is None:
-            return None
-
-        return value_to_brightness(LEVEL_RANGE, float(self.obj.level))
-
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the light on."""
-        transition = kwargs.get(ATTR_TRANSITION, 0)
-        level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
-
-        await self.async_request_call(self.obj.turn_on(transition, level))
-
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the light off."""
-        transition = kwargs.get(ATTR_TRANSITION, 0)
-
-        await self.async_request_call(self.obj.turn_off(transition))
-
-
-def scale_color_brightness(color: ColorT, brightness: int | None) -> ColorT:
-    """Scale the brightness of an RGB/RGBW color tuple."""
+def _scale_color_brightness[T: tuple[int, ...]](color: T, brightness: int | None) -> T:
+    # Scale the brightness of an RGB/RGBW color tuple.
     if brightness is None:
         return color
 
-    return cast(ColorT, tuple(int(round(c * brightness / 255)) for c in color))
+    return cast(T, tuple(int(round(c * brightness / 255)) for c in color))
+
+
+def _is_dimmable_load(client: Vantage, obj: Load) -> bool:
+    # Determine if a load is dimmable based on its power profile
+    power_profile = client.power_profiles.get(obj.power_profile)
+    return power_profile is not None and power_profile.is_dimmable

@@ -1,14 +1,14 @@
 """The Vantage InFusion Controller integration."""
 
 import asyncio
-from typing import Any
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import Vantage
 from aiovantage.errors import (
     ClientConnectionError,
     LoginFailedError,
     LoginRequiredError,
 )
+from aiovantage.events import ObjectUpdated
 from aiovantage.objects import Master
 
 from homeassistant.config_entries import ConfigEntryAuthFailed, ConfigEntryNotReady
@@ -43,9 +43,6 @@ PLATFORMS: list[Platform] = [
 # How long to wait after receiving a system programming event before refreshing
 SYSTEM_PROGRAMMING_DELAY = 30
 
-# Use Home Assistant's default "no verify" SSL context for connections
-Vantage.set_ssl_context_factory(get_default_no_verify_context)
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
@@ -55,6 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
         ssl=entry.data.get(CONF_SSL, True),
+        ssl_context_factory=get_default_no_verify_context,
     )
 
     # Store the client in the config entry's runtime data
@@ -64,38 +62,42 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
         # Initialize and fetch all objects
         await vantage.initialize()
 
-        # Register vantage domain services
-        async_register_services(hass)
-
         # Add Vantage devices (controllers, modules, stations) to the device registry
         await async_setup_devices(hass, entry)
-
-        # Generate events for button presses
-        async_setup_events(hass, entry)
 
         # Set up each platform (lights, covers, etc.)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+        # Register services (start task, stop task, etc.)
+        async_register_services(hass)
+
+        # Generate events for button presses, etc.
+        async_setup_events(hass, entry)
+
         # Clean up any orphaned entities
         async_cleanup_entities(hass, entry)
 
+        # Run any migrations
+        await async_migrate_data(hass, entry)
+
         # Subscribe to system programming events
-        async def handle_system_program_event(
-            event: VantageEvent, obj: Master, data: dict[str, Any]
-        ) -> None:
+        def on_master_updated(event: ObjectUpdated[Master]) -> None:
             # Return early if the m_time attribute did not change
-            if "m_time" not in data.get("attrs_changed", []):
+            if "m_time" not in event.attrs_changed:
                 return
 
-            # The m_time attribute changes at the start of system programming.
-            # Unfortunately, the Vantage controller does not send an event when
-            # programming ends, so we must wait for a short time before refreshing
-            # controllers to avoid fetching incomplete data.
-            await asyncio.sleep(SYSTEM_PROGRAMMING_DELAY)
-            await vantage.initialize()
+            async def refresh_controllers() -> None:
+                # The m_time attribute changes at the start of system programming.
+                # Unfortunately, the Vantage controller does not send an event when
+                # programming ends, so we must wait for a short time before refreshing
+                # controllers to avoid fetching incomplete data.
+                await asyncio.sleep(SYSTEM_PROGRAMMING_DELAY)
+                await vantage.initialize()
 
-        vantage.masters.subscribe(
-            handle_system_program_event, event_filter=VantageEvent.OBJECT_UPDATED
+            hass.async_create_task(refresh_controllers())
+
+        entry.async_on_unload(
+            vantage.masters.subscribe(ObjectUpdated, on_master_updated)
         )
 
     except (LoginFailedError, LoginRequiredError) as err:
@@ -107,9 +109,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
         # Handle connection errors. Home Assistant will automatically take care of
         # retrying set up later.
         raise ConfigEntryNotReady from err
-
-    # Run any migrations
-    await async_migrate_data(hass, entry)
 
     return True
 

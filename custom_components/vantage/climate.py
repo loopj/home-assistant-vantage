@@ -1,10 +1,10 @@
 """Support for Vantage climate entities."""
 
-import functools
-from typing import Any
+from typing import Any, override
 
-from aiovantage import VantageEvent
-from aiovantage.objects import Thermostat
+from aiovantage.controllers import ThermostatTypes
+from aiovantage.events import ObjectUpdated
+from aiovantage.objects import Temperature, Thermostat
 
 from homeassistant.components.climate import (
     ATTR_TARGET_TEMP_HIGH,
@@ -22,7 +22,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
 from .const import LOGGER
-from .entity import VantageEntity, async_register_vantage_objects
+from .entity import VantageEntity
 
 # Set up the min/max temperature range for the thermostat
 VANTAGE_MIN_TEMP = 5
@@ -53,30 +53,30 @@ async def async_setup_entry(
     entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Vantage cover entities from config entry."""
+    """Set up Vantage climate entities from a config entry."""
     vantage = entry.runtime_data.client
-    register_items = functools.partial(
-        async_register_vantage_objects, entry, async_add_entities
-    )
 
-    # Set up all climate entities
-    register_items(vantage.thermostats, VantageClimate)
+    # Add every thermostat as a climate entity
+    VantageClimateEntity.add_entities(entry, async_add_entities, vantage.thermostats)
 
 
-class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
-    """Vantage blind cover entity."""
+class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
+    """Climate sensor entity provided by a Vantage thermostat."""
 
     _attr_max_temp = VANTAGE_MAX_TEMP
     _attr_min_temp = VANTAGE_MIN_TEMP
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
 
+    @override
     def __post_init__(self) -> None:
-        """Initialize a Vantage Cover."""
-
         # Look up the sensors attached to this thermostat
-        self.temperature = self.client.thermostats.indoor_sensor(self.obj.id).first()
-        self.cool_setpoint = self.client.thermostats.cool_setpoint(self.obj.id).first()
-        self.heat_setpoint = self.client.thermostats.heat_setpoint(self.obj.id).first()
+        sensors = self.client.temperatures.filter(
+            lambda obj: obj.parent.vid == self.obj.vid
+        )
+
+        self.indoor_temperature = sensors.get(lambda obj: obj.parent.position == 1)
+        self.cool_setpoint = sensors.get(lambda obj: obj.parent.position == 3)
+        self.heat_setpoint = sensors.get(lambda obj: obj.parent.position == 4)
 
         # Set up the entity attributes
         self._attr_supported_features = (
@@ -97,77 +97,86 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             HVACMode.OFF,
         ]
 
+    @override
     async def async_added_to_hass(self) -> None:
-        """Register callbacks."""
         await super().async_added_to_hass()
 
-        # Register a callback for when child temperature sensors are updated
+        # Register a callback for when thermostat temperature sensors are updated
         sensor_ids = [
-            obj.id
-            for obj in [self.temperature, self.cool_setpoint, self.heat_setpoint]
+            obj.vid
+            for obj in [self.indoor_temperature, self.cool_setpoint, self.heat_setpoint]
             if obj is not None
         ]
 
+        def on_temperature_updated(event: ObjectUpdated[Temperature]) -> None:
+            if event.obj.vid in sensor_ids:
+                self.async_write_ha_state()
+
         self.async_on_remove(
-            self.client.temperature_sensors.subscribe(
-                lambda e, o, d: self.async_write_ha_state(),
-                sensor_ids,
-                VantageEvent.OBJECT_UPDATED,
-            )
+            self.client.temperatures.subscribe(ObjectUpdated, on_temperature_updated)
         )
 
     @property
+    @override
     def current_temperature(self) -> float | None:
-        """Return the current temperature."""
-        if self.temperature is None or self.temperature.value is None:
+        if self.indoor_temperature is None or self.indoor_temperature.value is None:
             return None
 
-        return float(self.temperature.value)
+        return float(self.indoor_temperature.value)
 
     @property
+    @override
     def target_temperature(self) -> float | None:
-        """Return the temperature we try to reach."""
         if self.hvac_mode == HVACMode.HEAT:
-            return self._heat_setpoint_value
+            if self.heat_setpoint is not None and self.heat_setpoint.value is not None:
+                return float(self.heat_setpoint.value)
+
         if self.hvac_mode == HVACMode.COOL:
-            return self._cool_setpoint_value
+            if self.cool_setpoint is not None and self.cool_setpoint.value is not None:
+                return float(self.cool_setpoint.value)
 
         return None
 
     @property
+    @override
     def target_temperature_high(self) -> float | None:
-        """Return the highbound target temperature we try to reach."""
         if self.hvac_mode != HVACMode.HEAT_COOL:
             return None
 
-        return self._cool_setpoint_value
+        if self.cool_setpoint is None or self.cool_setpoint.value is None:
+            return None
+
+        return float(self.cool_setpoint.value)
 
     @property
+    @override
     def target_temperature_low(self) -> float | None:
-        """Return the lowbound target temperature we try to reach."""
         if self.hvac_mode != HVACMode.HEAT_COOL:
             return None
 
-        return self._heat_setpoint_value
+        if self.heat_setpoint is None or self.heat_setpoint.value is None:
+            return None
+
+        return float(self.heat_setpoint.value)
 
     @property
+    @override
     def hvac_mode(self) -> HVACMode | None:
-        """Return current HVAC mode."""
         if self.obj.operation_mode is None:
             return None
 
         return VANTAGE_HVAC_MODE_MAP.get(self.obj.operation_mode)
 
     @property
+    @override
     def fan_mode(self) -> str | None:
-        """Return the fan setting."""
         if self.obj.fan_mode is None:
             return None
 
         return VANTAGE_FAN_MODE_MAP.get(self.obj.fan_mode)
 
+    @override
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        """Set new target hvac mode."""
         vantage_hvac_mode = next(
             (key for key, val in VANTAGE_HVAC_MODE_MAP.items() if val == hvac_mode),
             None,
@@ -179,8 +188,8 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
 
         await self.async_request_call(self.obj.set_operation_mode(vantage_hvac_mode))
 
+    @override
     async def async_set_fan_mode(self, fan_mode: str) -> None:
-        """Set new target fan mode."""
         vantage_fan_mode = next(
             (key for key, val in VANTAGE_FAN_MODE_MAP.items() if val == fan_mode),
             None,
@@ -192,8 +201,8 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
 
         await self.async_request_call(self.obj.set_fan_mode(vantage_fan_mode))
 
+    @override
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        """Set new target temperature."""
         low_temp = kwargs.get(ATTR_TARGET_TEMP_LOW)
         high_temp = kwargs.get(ATTR_TARGET_TEMP_HIGH)
         temp = kwargs.get(ATTR_TEMPERATURE)
@@ -207,19 +216,3 @@ class VantageClimate(VantageEntity[Thermostat], ClimateEntity):
             await self.async_request_call(self.obj.set_cool_set_point(temp))
         else:
             LOGGER.error("Invalid arguments for async_set_temperature in %s", kwargs)
-
-    @property
-    def _cool_setpoint_value(self) -> float | None:
-        # Return the current cool setpoint value.
-        if self.cool_setpoint is None or self.cool_setpoint.value is None:
-            return None
-
-        return float(self.cool_setpoint.value)
-
-    @property
-    def _heat_setpoint_value(self) -> float | None:
-        # Return the current heat setpoint value.
-        if self.heat_setpoint is None or self.heat_setpoint.value is None:
-            return None
-
-        return float(self.heat_setpoint.value)

@@ -1,10 +1,11 @@
 """Support for Vantage devices."""
 
-from typing import Any, Protocol, TypeVar, runtime_checkable
+from typing import Protocol, runtime_checkable
 from collections.abc import Awaitable, Callable
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import Vantage
 from aiovantage.controllers import BaseController
+from aiovantage.events import ObjectAdded, ObjectDeleted, ObjectUpdated
 from aiovantage.objects import (
     LocationObject,
     Master,
@@ -20,20 +21,18 @@ from homeassistant.helpers.entity import DeviceInfo
 from .config_entry import VantageConfigEntry
 from .const import DOMAIN
 
-T = TypeVar("T", bound=SystemObject)
-
 
 async def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Set up Vantage devices in the device registry."""
     vantage = entry.runtime_data.client
     dev_reg = dr.async_get(hass)
 
-    async def register_items(
+    async def register_items[T: SystemObject](
         controller: BaseController[T],
         extra_info_fn: Callable[[T], Awaitable[DeviceInfo]] | None = None,
     ) -> None:
         # Register a device in the device registry
-        async def add_device(obj: T) -> dr.DeviceEntry:
+        async def add_or_update_device(obj: T) -> dr.DeviceEntry:
             device_info = vantage_device_info(vantage, obj)
             if extra_info_fn:
                 device_info.update(await extra_info_fn(obj))
@@ -42,26 +41,24 @@ async def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) ->
                 config_entry_id=entry.entry_id, **device_info
             )
 
-        # Remove a device from the device registry
-        def remove_device(obj: T) -> None:
-            if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
-                dev_reg.async_remove_device(device.id)
-
-        # Handle device added, updated, or removed events
-        async def handle_device_event(
-            event_type: VantageEvent, obj: T, _data: Any
-        ) -> None:
-            if event_type == VantageEvent.OBJECT_DELETED:
-                remove_device(obj)
-            else:
-                await add_device(obj)
-
         # Add all current members of this controller
         for obj in controller:
-            await add_device(obj)
+            await add_or_update_device(obj)
 
-        # Register a callback for new members
-        entry.async_on_unload(controller.subscribe(handle_device_event))
+        # Monitor for changes to the controller
+        def on_device_added(event: ObjectAdded[T]) -> None:
+            hass.async_create_task(add_or_update_device(event.obj))
+
+        def on_device_updated(event: ObjectUpdated[T]) -> None:
+            hass.async_create_task(add_or_update_device(event.obj))
+
+        def on_device_deleted(event: ObjectDeleted[T]) -> None:
+            if device := dev_reg.async_get_device({(DOMAIN, str(event.obj.vid))}):
+                dev_reg.async_remove_device(device.id)
+
+        entry.async_on_unload(controller.subscribe(ObjectAdded, on_device_added))
+        entry.async_on_unload(controller.subscribe(ObjectDeleted, on_device_deleted))
+        entry.async_on_unload(controller.subscribe(ObjectUpdated, on_device_updated))
 
     # Register "master" devices, additionally fetching the firmware version
     async def extra_master_info(obj: Master) -> DeviceInfo:
@@ -93,8 +90,8 @@ class ChildObject(Protocol):
 def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     """Build the device info for a Vantage object."""
     device_info = DeviceInfo(
-        identifiers={(DOMAIN, str(obj.id))},
-        name=obj.display_name,
+        identifiers={(DOMAIN, str(obj.vid))},
+        name=obj.d_name or obj.name,
     )
 
     # Suggest sensible model and manufacturer names
@@ -125,11 +122,11 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     if not isinstance(obj, Master):
         if (
             isinstance(obj, ChildObject)
-            and obj.parent.id in client
-            and not client.back_boxes.get(obj.parent.id)
+            and obj.parent.vid in client
+            and not client.back_boxes.get(obj.parent.vid)
         ):
             # Attach the parent device for child objects (except for BackBoxes)
-            device_info["via_device"] = (DOMAIN, str(obj.parent.id))
+            device_info["via_device"] = (DOMAIN, str(obj.parent.vid))
         else:
             # Attach the master device for all other objects
             device_info["via_device"] = (DOMAIN, str(obj.master))

@@ -1,9 +1,9 @@
 """Support for generic Vantage entities."""
 
-from collections.abc import Callable, Coroutine
-from typing import Any, Generic, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import override
 
-from aiovantage import Vantage, VantageEvent
+from aiovantage import Vantage
 from aiovantage.controllers import BaseController
 from aiovantage.errors import (
     ClientError,
@@ -11,9 +11,10 @@ from aiovantage.errors import (
     LoginFailedError,
     LoginRequiredError,
 )
+from aiovantage.events import ObjectAdded, ObjectDeleted, ObjectUpdated
 from aiovantage.objects import GMem, SystemObject
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo, Entity
@@ -22,38 +23,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .config_entry import VantageConfigEntry
 from .const import DOMAIN
 from .device import vantage_device_info
-
-# TypeVar for a SystemObject or subclass
-SystemObjectT = TypeVar("SystemObjectT", bound=SystemObject)
-
-# TypeVar for async_request_call
-T = TypeVar("T")
-
-
-def async_register_vantage_objects(
-    entry: VantageConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-    controller: BaseController[Any],
-    entity_class: type["VantageEntity[Any]"],
-    object_filter: Callable[[SystemObjectT], bool] | None = None,
-) -> None:
-    """Add entities to HA from a Vantage controller, add a callback for new entities."""
-    vantage = entry.runtime_data.client
-
-    # Add all current objects in the controller that match the filter
-    objects = controller.filter(object_filter) if object_filter else controller
-    entities = [entity_class(vantage, entry, controller, obj) for obj in objects]
-    async_add_entities(entities)
-
-    # Register a callback for objects added to this controller that match the filter
-    @callback
-    def async_add_entity(_type: VantageEvent, obj: SystemObjectT, _data: Any) -> None:
-        if object_filter is None or object_filter(obj):
-            async_add_entities([entity_class(vantage, entry, controller, obj)])
-
-    entry.async_on_unload(
-        controller.subscribe(async_add_entity, event_filter=VantageEvent.OBJECT_ADDED)
-    )
 
 
 def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
@@ -67,27 +36,49 @@ def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> No
             ent_reg.async_remove(entity.entity_id)
 
 
-class VantageEntity(Generic[SystemObjectT], Entity):
+class VantageEntity[T: SystemObject](Entity):
     """Base class for Vantage entities."""
 
     _attr_should_poll = False
     _attr_has_entity_name = True
 
+    @classmethod
+    def add_entities(
+        cls,
+        entry: VantageConfigEntry,
+        async_add_entities: AddEntitiesCallback,
+        controller: BaseController[T],
+        filter: Callable[[T], bool] | None = None,
+    ) -> None:
+        """Add entities to HA from a Vantage controller."""
+        vantage = entry.runtime_data.client
+
+        # Add all entities currently known by the controller that match the filter
+        queryset = controller.filter(filter) if filter else controller
+        async_add_entities([cls(vantage, entry, controller, obj) for obj in queryset])
+
+        # Add any new entities added to the controller that match the filter
+        def on_object_added(event: ObjectAdded[T]) -> None:
+            if filter is None or filter(event.obj):
+                async_add_entities([cls(vantage, entry, controller, event.obj)])
+
+        entry.async_on_unload(controller.subscribe(ObjectAdded, on_object_added))
+
     def __init__(
         self,
         client: Vantage,
-        config_entry: VantageConfigEntry,
-        controller: BaseController[Any],
-        obj: SystemObjectT,
+        entry: VantageConfigEntry,
+        controller: BaseController[T],
+        obj: T,
     ):
         """Initialize a generic Vantage entity."""
         self.client = client
-        self.config_entry = config_entry
+        self.entry = entry
         self.controller = controller
         self.obj = obj
         self.parent_obj: SystemObject | None = None
 
-        self._attr_unique_id = str(obj.id)
+        self._attr_unique_id = str(obj.vid)
 
         self.__post_init__()
 
@@ -95,22 +86,22 @@ class VantageEntity(Generic[SystemObjectT], Entity):
         """Run after entity is initialized."""
 
     @property
+    @override
     def name(self) -> str | None:
-        """Return the name of the entity."""
         if self.parent_obj:
             return self.obj.name
 
         return None
 
     @property
-    def device_info(self) -> DeviceInfo | None:
-        """Return device specific attributes."""
+    @override
+    def device_info(self) -> DeviceInfo:
         if self.parent_obj:
             return vantage_device_info(self.client, self.parent_obj)
 
         return vantage_device_info(self.client, self.obj)
 
-    async def async_request_call(self, coro: Coroutine[Any, Any, T]) -> T:
+    async def async_request_call[U](self, coro: Awaitable[U]) -> U:
         """Send a request to the Vantage controller."""
         try:
             return await coro
@@ -120,7 +111,7 @@ class VantageEntity(Generic[SystemObjectT], Entity):
                 # integration. This can happen when authentication is enabled on the
                 # controller after the integration is configured, when the user changes
                 # the password, or when a firmware update resets the password.
-                self.config_entry.async_start_reauth(self.hass)
+                self.entry.async_start_reauth(self.hass)
             elif isinstance(err, InvalidObjectError):
                 # If the object ID of a request is invalid, mark the entity as
                 # unavailable. This can happen when the user deletes an object from the
@@ -128,69 +119,71 @@ class VantageEntity(Generic[SystemObjectT], Entity):
                 self._attr_available = False
 
             raise HomeAssistantError(
-                f"Request for {self.entity_id} ({self.obj.id}) failed: {err}"
+                f"Request for {self.entity_id} ({self.obj.vid}) failed: {err}"
             ) from err
 
+    @override
     async def async_added_to_hass(self) -> None:
-        """Run when entity about to be added to hass."""
         self.async_on_remove(
-            self.controller.subscribe(
-                self._handle_event,
-                self.obj.id,
-                (VantageEvent.OBJECT_UPDATED, VantageEvent.OBJECT_DELETED),
-            )
+            self.controller.subscribe(ObjectUpdated, self._on_object_updated)
+        )
+
+        self.async_on_remove(
+            self.controller.subscribe(ObjectDeleted, self._on_object_deleted)
         )
 
     async def async_update(self) -> None:
-        """Update the state of an entity manully, typically when polling."""
+        """Update the entity state (only used for polling entities)."""
         await self.async_request_call(self.obj.fetch_state())
 
-    @callback
-    def _handle_event(
-        self, event_type: VantageEvent, obj: SystemObjectT, _data: Any
-    ) -> None:
-        # Handle callback from Vantage for this object.
-        if event_type == VantageEvent.OBJECT_DELETED:
-            # Remove the entity from the entity registry.
-            ent_reg = er.async_get(self.hass)
-            if self.entity_id in ent_reg.entities:
-                ent_reg.async_remove(self.entity_id)
+    def _on_object_updated(self, event: ObjectUpdated[T]) -> None:
+        if event.obj != self.obj:
+            return
 
-            # If this object owns a device, remove it from the device registry.
-            dev_reg = dr.async_get(self.hass)
-            if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
-                dev_reg.async_remove_device(device.id)
+        # If this object owns a device, update it in the device registry.
+        dev_reg = dr.async_get(self.hass)
+        if dev_reg.async_get_device({(DOMAIN, str(self.obj.vid))}):
+            if self.registry_entry and self.registry_entry.config_entry_id:
+                dev_reg.async_get_or_create(
+                    config_entry_id=self.registry_entry.config_entry_id,
+                    **vantage_device_info(self.client, self.obj),
+                )
 
-        elif event_type == VantageEvent.OBJECT_UPDATED:
-            # If this object owns a device, update it in the device registry.
-            dev_reg = dr.async_get(self.hass)
-            if device := dev_reg.async_get_device({(DOMAIN, str(obj.id))}):
-                if self.registry_entry and self.registry_entry.config_entry_id:
-                    dev_reg.async_get_or_create(
-                        config_entry_id=self.registry_entry.config_entry_id,
-                        **vantage_device_info(self.client, obj),
-                    )
+        # Tell HA the state has changed.
+        self.async_write_ha_state()
 
-        # Object state is kept up to date by the Vantage client by an internal
-        # subscription.  We just need to tell HA the state has changed.
+    def _on_object_deleted(self, event: ObjectDeleted[T]) -> None:
+        if event.obj != self.obj:
+            return
+
+        # Remove the entity from the entity registry.
+        ent_reg = er.async_get(self.hass)
+        if self.entity_id in ent_reg.entities:
+            ent_reg.async_remove(self.entity_id)
+
+        # If this object owns a device, remove it from the device registry.
+        dev_reg = dr.async_get(self.hass)
+        if device := dev_reg.async_get_device({(DOMAIN, str(self.obj.vid))}):
+            dev_reg.async_remove_device(device.id)
+
+        # Tell HA the state has changed.
         self.async_write_ha_state()
 
 
-class VantageVariableEntity(VantageEntity[GMem]):
+class VantageGMemEntity(VantageEntity[GMem]):
     """Base class for Vantage Variable entities."""
 
     # Hide variables by default
     _attr_entity_registry_visible_default = False
 
     @property
+    @override
     def name(self) -> str:
-        """Return the name of the entity."""
         return self.obj.name
 
     @property
-    def device_info(self) -> DeviceInfo | None:
-        """Return device specific attributes."""
-
+    @override
+    def device_info(self) -> DeviceInfo:
         # Attach variable entities to a "variables" virtual device
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self.obj.master}:variables")},

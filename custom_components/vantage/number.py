@@ -1,8 +1,6 @@
 """Support for Vantage number entities."""
 
-import functools
-
-from aiovantage.objects import GMem
+from typing import override
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.const import PERCENTAGE, LIGHT_LUX, UnitOfTemperature, UnitOfTime
@@ -11,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
 from .const import LOGGER
-from .entity import VantageVariableEntity, async_register_vantage_objects
+from .entity import VantageGMemEntity
 
 
 async def async_setup_entry(
@@ -19,24 +17,23 @@ async def async_setup_entry(
     entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Vantage number entities from config entry."""
+    """Set up Vantage number entities from a config entry."""
     vantage = entry.runtime_data.client
-    register_items = functools.partial(
-        async_register_vantage_objects, entry, async_add_entities
+
+    # Add every GMem object with a numeric data type as a number entity
+    VantageGMemNumberEntity.add_entities(
+        entry,
+        async_add_entities,
+        vantage.gmem,
+        filter=lambda obj: obj.is_int or obj.is_fixed,
     )
 
-    # Register all number entities
-    def gmem_filter(obj: GMem) -> bool:
-        return obj.is_int or obj.is_fixed
 
-    register_items(vantage.gmem, VantageNumberVariable, gmem_filter)
+class VantageGMemNumberEntity(VantageGMemEntity, NumberEntity):
+    """Number entity provided by a Vantage GMem object."""
 
-
-class VantageNumberVariable(VantageVariableEntity, NumberEntity):
-    """Vantage numeric variable number entity."""
-
+    @override
     def __post_init__(self) -> None:
-        """Initialize a Vantage number variable."""
         match self.obj.tag.type:
             case "DeviceUnits":
                 # Generic fixed-precision unsigned measurement unit
@@ -90,8 +87,8 @@ class VantageNumberVariable(VantageVariableEntity, NumberEntity):
                 )
 
     @property
+    @override
     def native_value(self) -> float | None:
-        """Return the value reported by the number."""
         if isinstance(self.obj.value, int):
             if self.obj.is_fixed:
                 return self.obj.value / 1000
@@ -100,8 +97,8 @@ class VantageNumberVariable(VantageVariableEntity, NumberEntity):
 
         return None
 
+    @override
     async def async_set_native_value(self, value: float) -> None:
-        """Set new value."""
         if self.obj.is_fixed:
             value = int(value * 1000)
         else:

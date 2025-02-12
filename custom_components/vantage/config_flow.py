@@ -1,6 +1,6 @@
 """Config flow for Vantage InFusion Controller integration."""
 
-from typing import Any
+from typing import Any, override
 
 from aiovantage.discovery import (
     VantageControllerDetails,
@@ -16,6 +16,7 @@ from homeassistant import config_entries
 from homeassistant.components import zeroconf
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_SSL, CONF_USERNAME
+from homeassistant.util.ssl import get_default_no_verify_context
 
 from .config_entry import VantageConfigEntry
 from .const import DOMAIN
@@ -46,10 +47,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     password: str | None = None
     reauth_entry: VantageConfigEntry | None = None
 
+    @override
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle a flow initiated by the user."""
         if user_input is None:
             return self.async_show_form(step_id="user", data_schema=USER_SCHEMA)
 
@@ -57,7 +58,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._async_abort_entries_match({CONF_HOST: user_input[CONF_HOST]})
 
         # Get information about the controller, show an error if it cannot be reached
-        self.controller = await get_controller_details(user_input[CONF_HOST])
+        self.controller = await get_controller_details(
+            user_input[CONF_HOST], ssl_context_factory=get_default_no_verify_context
+        )
+
         if self.controller is None:
             return self.async_show_form(
                 step_id="user",
@@ -70,10 +74,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_auth()
         return await self.async_finish()
 
+    @override
     async def async_step_zeroconf(
         self, discovery_info: zeroconf.ZeroconfServiceInfo
     ) -> ConfigFlowResult:
-        """Handle a flow initiated by zeroconf discovery."""
         serial_number = get_serial_from_hostname(discovery_info.hostname)
         if serial_number is None:
             return self.async_abort(reason="unknown")
@@ -83,7 +87,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.host})
 
         # Get information about the controller, abort if it cannot be reached
-        self.controller = await get_controller_details(discovery_info.host)
+        self.controller = await get_controller_details(
+            discovery_info.host, ssl_context_factory=get_default_no_verify_context
+        )
+
         if self.controller is None:
             return self.async_abort(reason="cannot_connect")
 
@@ -158,6 +165,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.username,
             self.password,
             ssl=self.controller.supports_ssl,
+            ssl_context_factory=get_default_no_verify_context,
         )
 
         if serial_number is None:
@@ -185,6 +193,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not (entry_id := self.context.get("entry_id")):
             return self.async_abort(reason="unknown")
 
+        # TODO: Migrate to self._get_reauth_entry
         self.reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
 
         return await self.async_step_reauth_confirm()
@@ -243,7 +252,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> dict[str, str] | None:
         """Validate the credentials for a Vantage controller, returning errors if invalid."""
         try:
-            if not await validate_credentials(host, username, password, ssl=ssl):
+            if not await validate_credentials(
+                host,
+                username,
+                password,
+                ssl=ssl,
+                ssl_context_factory=get_default_no_verify_context,
+            ):
                 return {"base": "invalid_auth"}
         except ClientConnectionError:
             return {"base": "cannot_connect"}

@@ -2,8 +2,8 @@
 
 import contextlib
 from decimal import Decimal
-import functools
 import socket
+from typing import override
 
 from aiovantage.objects import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
 
@@ -20,7 +20,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
-from .entity import VantageEntity, async_register_vantage_objects
+from .entity import VantageEntity
 
 FOOT_CANDLES_TO_LUX = 10.7639
 
@@ -30,21 +30,34 @@ async def async_setup_entry(
     entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Vantage sensor entities from config entry."""
+    """Set up Vantage sensor entities from a config entry."""
     vantage = entry.runtime_data.client
-    register_items = functools.partial(
-        async_register_vantage_objects, entry, async_add_entities
+
+    # Add all temperature objects as sensor entities
+    VantageTemperatureSensorEntity.add_entities(
+        entry, async_add_entities, vantage.temperatures
     )
 
-    # Register all sensor entities
-    register_items(vantage.temperature_sensors, VantageTemperatureSensor)
-    register_items(vantage.anemo_sensors, VantageWindSensor)
-    register_items(vantage.light_sensors, VantageLightSensor)
-    register_items(vantage.omni_sensors, VantageOmniSensor)
-    register_items(vantage.masters, VantageMasterIP)
+    # Add all anemo sensor objects as sensor entities
+    VantageAnemoSensorEntity.add_entities(
+        entry, async_add_entities, vantage.anemo_sensors
+    )
+
+    # Add all light sensor objects as sensor entities
+    VantageLightSensorEntity.add_entities(
+        entry, async_add_entities, vantage.light_sensors
+    )
+
+    # Add all omni sensor objects as sensor entities
+    VantageOmniSensorEntity.add_entities(
+        entry, async_add_entities, vantage.omni_sensors
+    )
+
+    # Add all master IP addresses as sensor entities
+    VantageMasterIPSensorEntity.add_entities(entry, async_add_entities, vantage.masters)
 
 
-class VantageTemperatureSensor(VantageEntity[Temperature], SensorEntity):
+class VantageTemperatureSensorEntity(VantageEntity[Temperature], SensorEntity):
     """Vantage temperature sensor entity."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
@@ -52,19 +65,19 @@ class VantageTemperatureSensor(VantageEntity[Temperature], SensorEntity):
     _attr_state_class = "measurement"
     _attr_suggested_display_precision = 1
 
+    @override
     def __post_init__(self) -> None:
-        """Initialize a Vantage temperature sensor."""
         # If this is a thermostat temperature sensor, attach it to the thermostat device
-        if parent := self.client.thermostats.get(self.obj.parent.id):
+        if parent := self.client.thermostats.get(self.obj.parent.vid):
             self.parent_obj = parent
 
     @property
+    @override
     def native_value(self) -> Decimal | None:
-        """Return the value reported by the sensor."""
         return self.obj.value
 
 
-class VantageWindSensor(VantageEntity[AnemoSensor], SensorEntity):
+class VantageAnemoSensorEntity(VantageEntity[AnemoSensor], SensorEntity):
     """Vantage wind sensor entity."""
 
     _attr_device_class = SensorDeviceClass.WIND_SPEED
@@ -78,7 +91,7 @@ class VantageWindSensor(VantageEntity[AnemoSensor], SensorEntity):
         return self.obj.speed
 
 
-class VantageLightSensor(VantageEntity[LightSensor], SensorEntity):
+class VantageLightSensorEntity(VantageEntity[LightSensor], SensorEntity):
     """Vantage light sensor entity."""
 
     _attr_device_class = SensorDeviceClass.ILLUMINANCE
@@ -95,8 +108,8 @@ class VantageLightSensor(VantageEntity[LightSensor], SensorEntity):
         return float(self.obj.level) * FOOT_CANDLES_TO_LUX
 
 
-class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
-    """Vantage 'OmniSensor' sensor entity."""
+class VantageOmniSensorEntity(VantageEntity[OmniSensor], SensorEntity):
+    """Vantage omni sensor entity."""
 
     _attr_should_poll = True
     _attr_state_class = "measurement"
@@ -104,7 +117,7 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
     def __post_init__(self) -> None:
         """Initialize a Vantage omnisensor."""
         # If this is a module omnisensor, attach it to the module device and disable by default
-        if parent := self.client.modules.get(self.obj.parent.id):
+        if parent := self.client.modules.get(self.obj.parent.vid):
             self.parent_obj = parent
             self._attr_entity_registry_enabled_default = False
 
@@ -129,7 +142,7 @@ class VantageOmniSensor(VantageEntity[OmniSensor], SensorEntity):
         return self.obj.level
 
 
-class VantageMasterIP(VantageEntity[Master], SensorEntity):
+class VantageMasterIPSensorEntity(VantageEntity[Master], SensorEntity):
     """Vantage controller IP address sensor entity."""
 
     _attr_icon = "mdi:ip"
@@ -142,7 +155,7 @@ class VantageMasterIP(VantageEntity[Master], SensorEntity):
 
     def __post_init__(self) -> None:
         """Initialize a Vantage master IP address."""
-        self._attr_unique_id = f"{self.obj.id}:ip_address"
+        self._attr_unique_id = f"{self.obj.vid}:ip_address"
 
         with contextlib.suppress(socket.gaierror):
             self._attr_native_value = socket.gethostbyname(self.client.host)
