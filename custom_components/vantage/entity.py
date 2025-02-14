@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import override
 
 from aiovantage import Vantage
-from aiovantage.controllers import BaseController
+from aiovantage.controllers import Controller
 from aiovantage.errors import (
     ClientError,
     InvalidObjectError,
@@ -41,7 +41,7 @@ async def add_entities_from_controller[T: SystemObject](
     entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
     entity_cls: type["VantageEntity[T]"],
-    controller: BaseController[T],
+    controller: Controller[T],
     filter: Callable[[T], bool] | None = None,
 ) -> None:
     """Add entities to HA from a Vantage controller."""
@@ -70,22 +70,14 @@ class VantageEntity[T: SystemObject](Entity):
 
     @classmethod
     async def create(
-        cls,
-        entry: VantageConfigEntry,
-        controller: BaseController[T],
-        obj: T,
+        cls, entry: VantageConfigEntry, controller: Controller[T], obj: T
     ) -> "VantageEntity[T]":
         """Create a new entity and run its async_init method."""
         entity = cls(entry, controller, obj)
         await entity.async_init()
         return entity
 
-    def __init__(
-        self,
-        entry: VantageConfigEntry,
-        controller: BaseController[T],
-        obj: T,
-    ):
+    def __init__(self, entry: VantageConfigEntry, controller: Controller[T], obj: T):
         """Initialize a generic Vantage entity."""
         self.entry = entry
         self.controller = controller

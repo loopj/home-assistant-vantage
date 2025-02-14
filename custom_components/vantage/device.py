@@ -4,7 +4,7 @@ from typing import Protocol, runtime_checkable
 from collections.abc import Awaitable, Callable
 
 from aiovantage import Vantage
-from aiovantage.controllers import BaseController
+from aiovantage.controllers import Controller
 from aiovantage.events import ObjectAdded, ObjectDeleted, ObjectUpdated
 from aiovantage.objects import (
     LocationObject,
@@ -28,7 +28,7 @@ async def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) ->
     dev_reg = dr.async_get(hass)
 
     async def register_items[T: SystemObject](
-        controller: BaseController[T],
+        controller: Controller[T],
         extra_info_fn: Callable[[T], Awaitable[DeviceInfo]] | None = None,
     ) -> None:
         # Register a device in the device registry
