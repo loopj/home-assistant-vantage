@@ -4,12 +4,17 @@ from typing import Any, override
 
 from aiovantage.controllers import ThermostatTypes
 from aiovantage.events import ObjectUpdated
-from aiovantage.objects import Temperature, Thermostat
+from aiovantage.object_interfaces import FanInterface, ThermostatInterface
+from aiovantage.objects import Temperature
 
 from homeassistant.components.climate import (
     ATTR_TARGET_TEMP_HIGH,
     ATTR_TARGET_TEMP_LOW,
     FAN_AUTO,
+    FAN_HIGH,
+    FAN_LOW,
+    FAN_MEDIUM,
+    FAN_OFF,
     FAN_ON,
     ClimateEntity,
     ClimateEntityFeature,
@@ -28,23 +33,51 @@ from .entity import VantageEntity
 VANTAGE_MIN_TEMP = 5
 VANTAGE_MAX_TEMP = 40
 
-# Map Vantage enums to HA enums
-VANTAGE_HVAC_MODE_MAP = {
-    Thermostat.OperationMode.Heat: HVACMode.HEAT,
-    Thermostat.OperationMode.Cool: HVACMode.COOL,
-    Thermostat.OperationMode.Auto: HVACMode.HEAT_COOL,
-    Thermostat.OperationMode.Off: HVACMode.OFF,
+# Mappings for ThermostatInterface.OperationMode <-> HA HVAC modes
+VANTAGE_OPERATION_MODE_TO_HA_HVAC_MODE = {
+    ThermostatInterface.OperationMode.Heat: HVACMode.HEAT,
+    ThermostatInterface.OperationMode.Cool: HVACMode.COOL,
+    ThermostatInterface.OperationMode.Auto: HVACMode.HEAT_COOL,
+    ThermostatInterface.OperationMode.Off: HVACMode.OFF,
 }
 
-VANTAGE_HVAC_ACTION_MAP = {
-    Thermostat.Status.Heating: HVACAction.HEATING,
-    Thermostat.Status.Cooling: HVACAction.COOLING,
-    Thermostat.Status.Off: HVACAction.OFF,
+HA_HVAC_MODE_TO_VANTAGE_OPERATION_MODE = {
+    v: k for k, v in VANTAGE_OPERATION_MODE_TO_HA_HVAC_MODE.items()
 }
 
-VANTAGE_FAN_MODE_MAP = {
-    Thermostat.FanMode.Off: FAN_AUTO,
-    Thermostat.FanMode.On: FAN_ON,
+# Mappings for ThermostatInterface.Status <-> HA HVAC actions
+VANTAGE_STATUS_TO_HA_HVAC_ACTION = {
+    ThermostatInterface.Status.Heating: HVACAction.HEATING,
+    ThermostatInterface.Status.Cooling: HVACAction.COOLING,
+    ThermostatInterface.Status.Off: HVACAction.OFF,
+}
+
+HA_HVAC_ACTION_TO_VANTAGE_STATUS = {
+    v: k for k, v in VANTAGE_STATUS_TO_HA_HVAC_ACTION.items()
+}
+
+# Mappings for ThermostatInterface.FanMode <-> HA fan modes
+VANTAGE_FAN_MODE_TO_HA_FAN_MODE = {
+    ThermostatInterface.FanMode.Off: FAN_AUTO,
+    ThermostatInterface.FanMode.On: FAN_ON,
+}
+
+HA_FAN_MODE_TO_VANTAGE_FAN_MODE = {
+    v: k for k, v in VANTAGE_FAN_MODE_TO_HA_FAN_MODE.items()
+}
+
+# Mappings for FanInterface.FanSpeed <-> HA fan modes
+VANTAGE_FAN_SPEED_TO_HA_FAN_MODE = {
+    FanInterface.FanSpeed.Off: FAN_OFF,
+    FanInterface.FanSpeed.Low: FAN_LOW,
+    FanInterface.FanSpeed.Medium: FAN_MEDIUM,
+    FanInterface.FanSpeed.High: FAN_HIGH,
+    FanInterface.FanSpeed.Max: "max",
+    FanInterface.FanSpeed.Auto: FAN_AUTO,
+}
+
+HA_FAN_MODE_TO_VANTAGE_FAN_SPEED = {
+    v: k for k, v in VANTAGE_FAN_SPEED_TO_HA_FAN_MODE.items()
 }
 
 
@@ -165,7 +198,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
         if self.obj.operation_mode is None:
             return None
 
-        return VANTAGE_HVAC_MODE_MAP.get(self.obj.operation_mode)
+        return VANTAGE_OPERATION_MODE_TO_HA_HVAC_MODE.get(self.obj.operation_mode)
 
     @property
     @override
@@ -173,15 +206,11 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
         if self.obj.fan_mode is None:
             return None
 
-        return VANTAGE_FAN_MODE_MAP.get(self.obj.fan_mode)
+        return VANTAGE_FAN_MODE_TO_HA_FAN_MODE.get(self.obj.fan_mode)
 
     @override
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        vantage_hvac_mode = next(
-            (key for key, val in VANTAGE_HVAC_MODE_MAP.items() if val == hvac_mode),
-            None,
-        )
-
+        vantage_hvac_mode = HA_HVAC_MODE_TO_VANTAGE_OPERATION_MODE.get(hvac_mode)
         if vantage_hvac_mode is None:
             LOGGER.error("Invalid mode for async_set_hvac_mode: %s", hvac_mode)
             return
@@ -190,11 +219,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
 
     @override
     async def async_set_fan_mode(self, fan_mode: str) -> None:
-        vantage_fan_mode = next(
-            (key for key, val in VANTAGE_FAN_MODE_MAP.items() if val == fan_mode),
-            None,
-        )
-
+        vantage_fan_mode = HA_FAN_MODE_TO_VANTAGE_FAN_MODE.get(fan_mode)
         if vantage_fan_mode is None:
             LOGGER.error("Invalid mode for async_set_fan_mode: %s", fan_mode)
             return
