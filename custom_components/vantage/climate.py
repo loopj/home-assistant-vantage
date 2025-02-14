@@ -2,10 +2,10 @@
 
 from typing import Any, override
 
-from aiovantage.controllers import ThermostatTypes
+from aiovantage.controllers import ThermostatTypes, StatusType
 from aiovantage.events import ObjectUpdated
 from aiovantage.object_interfaces import FanInterface, ThermostatInterface
-from aiovantage.objects import Temperature
+from aiovantage.objects import Temperature, Thermostat
 
 from homeassistant.components.climate import (
     ATTR_TARGET_TEMP_HIGH,
@@ -101,74 +101,102 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
     _attr_max_temp = VANTAGE_MAX_TEMP
     _attr_min_temp = VANTAGE_MIN_TEMP
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_supported_features = (
+        ClimateEntityFeature.FAN_MODE
+        | ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
+    )
+
+    _legacy_status_handling: bool = False
 
     @override
-    def __post_init__(self) -> None:
-        # Look up the sensors attached to this thermostat
-        sensors = self.client.temperatures.filter(
-            lambda obj: obj.parent.vid == self.obj.vid
-        )
+    async def async_init(self):
+        self._attr_fan_modes = []
+        self._attr_hvac_modes = []
 
-        self.indoor_temperature = sensors.get(lambda obj: obj.parent.position == 1)
-        self.cool_setpoint = sensors.get(lambda obj: obj.parent.position == 3)
-        self.heat_setpoint = sensors.get(lambda obj: obj.parent.position == 4)
+        # Populate supported fan modes
+        if isinstance(self.obj, FanInterface):
+            for speed in await self.obj.get_supported_enum_values(
+                FanInterface, FanInterface.FanSpeed
+            ):
+                if speed in VANTAGE_FAN_SPEED_TO_HA_FAN_MODE:
+                    self._attr_fan_modes.append(VANTAGE_FAN_SPEED_TO_HA_FAN_MODE[speed])
+        else:
+            for mode in await self.obj.get_supported_enum_values(
+                ThermostatInterface, ThermostatInterface.FanMode
+            ):
+                if mode in VANTAGE_FAN_MODE_TO_HA_FAN_MODE:
+                    self._attr_fan_modes.append(VANTAGE_FAN_MODE_TO_HA_FAN_MODE[mode])
 
-        # Set up the entity attributes
-        self._attr_supported_features = (
-            ClimateEntityFeature.FAN_MODE
-            | ClimateEntityFeature.TARGET_TEMPERATURE
-            | ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
-        )
+        # Populate supported HVAC modes
+        for mode in await self.obj.get_supported_enum_values(
+            ThermostatInterface, ThermostatInterface.OperationMode
+        ):
+            if mode in VANTAGE_OPERATION_MODE_TO_HA_HVAC_MODE:
+                self._attr_hvac_modes.append(
+                    VANTAGE_OPERATION_MODE_TO_HA_HVAC_MODE[mode]
+                )
 
-        self._attr_fan_modes = [
-            FAN_AUTO,
-            FAN_ON,
-        ]
+        # Setup legacy status sensors
+        # This is only required for 2.x firmware versions, where status updates for
+        # thermostats are provided by separate temperature sensors.
+        if self.client.thermostats.status_type == StatusType.CATEGORY and isinstance(
+            self.obj, Thermostat
+        ):
+            self._legacy_status_handling = True
 
-        self._attr_hvac_modes = [
-            HVACMode.HEAT_COOL,
-            HVACMode.COOL,
-            HVACMode.HEAT,
-            HVACMode.OFF,
-        ]
+            # Look up the sensors attached to this thermostat
+            self._indoor_temperature_sensor = self.client.temperatures.get(
+                lambda obj: obj.parent.vid == self.obj.vid and obj.parent.position == 1
+            )
+
+            self._cool_setpoint_sensor = self.client.temperatures.get(
+                lambda obj: obj.parent.vid == self.obj.vid and obj.parent.position == 3
+            )
+
+            self._heat_setpoint_sensor = self.client.temperatures.get(
+                lambda obj: obj.parent.vid == self.obj.vid and obj.parent.position == 4
+            )
 
     @override
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
 
-        # Register a callback for when thermostat temperature sensors are updated
-        sensor_ids = [
-            obj.vid
-            for obj in [self.indoor_temperature, self.cool_setpoint, self.heat_setpoint]
-            if obj is not None
-        ]
+        # Setup legacy status callbacks
+        if self._legacy_status_handling:
+            sensor_ids = [
+                obj.vid
+                for obj in [
+                    self._indoor_temperature_sensor,
+                    self._cool_setpoint_sensor,
+                    self._heat_setpoint_sensor,
+                ]
+                if obj is not None
+            ]
 
-        def on_temperature_updated(event: ObjectUpdated[Temperature]) -> None:
-            if event.obj.vid in sensor_ids:
-                self.async_write_ha_state()
+            def on_temperature_updated(event: ObjectUpdated[Temperature]) -> None:
+                if event.obj.vid in sensor_ids:
+                    self.async_write_ha_state()
 
-        self.async_on_remove(
-            self.client.temperatures.subscribe(ObjectUpdated, on_temperature_updated)
-        )
+            self.async_on_remove(
+                self.client.temperatures.subscribe(
+                    ObjectUpdated, on_temperature_updated
+                )
+            )
 
     @property
     @override
     def current_temperature(self) -> float | None:
-        if self.indoor_temperature is None or self.indoor_temperature.value is None:
-            return None
-
-        return float(self.indoor_temperature.value)
+        return self._get_indoor_temperature()
 
     @property
     @override
     def target_temperature(self) -> float | None:
         if self.hvac_mode == HVACMode.HEAT:
-            if self.heat_setpoint is not None and self.heat_setpoint.value is not None:
-                return float(self.heat_setpoint.value)
+            return self._get_heat_set_point()
 
         if self.hvac_mode == HVACMode.COOL:
-            if self.cool_setpoint is not None and self.cool_setpoint.value is not None:
-                return float(self.cool_setpoint.value)
+            return self._get_cool_set_point()
 
         return None
 
@@ -178,10 +206,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
         if self.hvac_mode != HVACMode.HEAT_COOL:
             return None
 
-        if self.cool_setpoint is None or self.cool_setpoint.value is None:
-            return None
-
-        return float(self.cool_setpoint.value)
+        return self._get_cool_set_point()
 
     @property
     @override
@@ -189,10 +214,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
         if self.hvac_mode != HVACMode.HEAT_COOL:
             return None
 
-        if self.heat_setpoint is None or self.heat_setpoint.value is None:
-            return None
-
-        return float(self.heat_setpoint.value)
+        return self._get_heat_set_point()
 
     @property
     @override
@@ -243,3 +265,42 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
             await self.async_request_call(self.obj.set_cool_set_point(temp))
         else:
             LOGGER.error("Invalid arguments for async_set_temperature in %s", kwargs)
+
+    def _get_indoor_temperature(self) -> float | None:
+        if self.obj.indoor_temperature is not None:
+            return float(self.obj.indoor_temperature)
+
+        # Legacy status handling for older firmware versions
+        if (
+            self._indoor_temperature_sensor is not None
+            and self._indoor_temperature_sensor.value is not None
+        ):
+            return float(self._indoor_temperature_sensor.value)
+
+        return
+
+    def _get_cool_set_point(self) -> float | None:
+        if self.obj.cool_set_point is not None:
+            return float(self.obj.cool_set_point)
+
+        # Legacy status handling for older firmware versions
+        if (
+            self._cool_setpoint_sensor is not None
+            and self._cool_setpoint_sensor.value is not None
+        ):
+            return float(self._cool_setpoint_sensor.value)
+
+        return None
+
+    def _get_heat_set_point(self) -> float | None:
+        if self.obj.heat_set_point is not None:
+            return float(self.obj.heat_set_point)
+
+        # Legacy status handling for older firmware versions
+        if (
+            self._heat_setpoint_sensor is not None
+            and self._heat_setpoint_sensor.value is not None
+        ):
+            return float(self._heat_setpoint_sensor.value)
+
+        return None
