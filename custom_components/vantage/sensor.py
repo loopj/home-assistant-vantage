@@ -20,7 +20,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
-from .entity import VantageEntity
+from .entity import VantageEntity, add_entities_from_controller
 
 FOOT_CANDLES_TO_LUX = 10.7639
 
@@ -34,30 +34,32 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add all temperature objects as sensor entities
-    VantageTemperatureSensorEntity.add_entities(
-        entry, async_add_entities, vantage.temperatures
+    await add_entities_from_controller(
+        hass, entry, async_add_entities, VantageTempSensorEntity, vantage.temperatures
     )
 
     # Add all anemo sensor objects as sensor entities
-    VantageAnemoSensorEntity.add_entities(
-        entry, async_add_entities, vantage.anemo_sensors
+    await add_entities_from_controller(
+        hass, entry, async_add_entities, VantageAnemoSensorEntity, vantage.anemo_sensors
     )
 
     # Add all light sensor objects as sensor entities
-    VantageLightSensorEntity.add_entities(
-        entry, async_add_entities, vantage.light_sensors
+    await add_entities_from_controller(
+        hass, entry, async_add_entities, VantageLightSensorEntity, vantage.light_sensors
     )
 
     # Add all omni sensor objects as sensor entities
-    VantageOmniSensorEntity.add_entities(
-        entry, async_add_entities, vantage.omni_sensors
+    await add_entities_from_controller(
+        hass, entry, async_add_entities, VantageOmniSensorEntity, vantage.omni_sensors
     )
 
     # Add all master IP addresses as sensor entities
-    VantageMasterIPSensorEntity.add_entities(entry, async_add_entities, vantage.masters)
+    await add_entities_from_controller(
+        hass, entry, async_add_entities, VantageMasterIPSensorEntity, vantage.masters
+    )
 
 
-class VantageTemperatureSensorEntity(VantageEntity[Temperature], SensorEntity):
+class VantageTempSensorEntity(VantageEntity[Temperature], SensorEntity):
     """Vantage temperature sensor entity."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE

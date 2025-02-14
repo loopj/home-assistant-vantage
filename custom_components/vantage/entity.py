@@ -36,6 +36,32 @@ def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> No
             ent_reg.async_remove(entity.entity_id)
 
 
+async def add_entities_from_controller[T: SystemObject](
+    hass: HomeAssistant,
+    entry: VantageConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+    entity_cls: type["VantageEntity[T]"],
+    controller: BaseController[T],
+    filter: Callable[[T], bool] | None = None,
+) -> None:
+    """Add entities to HA from a Vantage controller."""
+    # Add all entities currently known by the controller that match the filter
+    objects = controller.filter(filter) if filter else controller
+    async_add_entities(
+        [await entity_cls.create(entry, controller, obj) for obj in objects]
+    )
+
+    # Add any new entities added to the controller that match the filter
+    async def add_new_entity(obj: T) -> None:
+        if filter is None or filter(obj):
+            async_add_entities([await entity_cls.create(entry, controller, obj)])
+
+    def on_object_added(event: ObjectAdded[T]) -> None:
+        hass.async_create_task(add_new_entity(event.obj))
+
+    entry.async_on_unload(controller.subscribe(ObjectAdded, on_object_added))
+
+
 class VantageEntity[T: SystemObject](Entity):
     """Base class for Vantage entities."""
 
@@ -43,36 +69,24 @@ class VantageEntity[T: SystemObject](Entity):
     _attr_has_entity_name = True
 
     @classmethod
-    def add_entities(
+    async def create(
         cls,
         entry: VantageConfigEntry,
-        async_add_entities: AddEntitiesCallback,
         controller: BaseController[T],
-        filter: Callable[[T], bool] | None = None,
-    ) -> None:
-        """Add entities to HA from a Vantage controller."""
-        vantage = entry.runtime_data.client
-
-        # Add all entities currently known by the controller that match the filter
-        queryset = controller.filter(filter) if filter else controller
-        async_add_entities([cls(vantage, entry, controller, obj) for obj in queryset])
-
-        # Add any new entities added to the controller that match the filter
-        def on_object_added(event: ObjectAdded[T]) -> None:
-            if filter is None or filter(event.obj):
-                async_add_entities([cls(vantage, entry, controller, event.obj)])
-
-        entry.async_on_unload(controller.subscribe(ObjectAdded, on_object_added))
+        obj: T,
+    ) -> "VantageEntity[T]":
+        """Create a new entity and run its async_init method."""
+        entity = cls(entry, controller, obj)
+        await entity.async_init()
+        return entity
 
     def __init__(
         self,
-        client: Vantage,
         entry: VantageConfigEntry,
         controller: BaseController[T],
         obj: T,
     ):
         """Initialize a generic Vantage entity."""
-        self.client = client
         self.entry = entry
         self.controller = controller
         self.obj = obj
@@ -84,6 +98,11 @@ class VantageEntity[T: SystemObject](Entity):
 
     def __post_init__(self) -> None:
         """Run after entity is initialized."""
+
+    @property
+    def client(self) -> Vantage:
+        """Return the Vantage client."""
+        return self.entry.runtime_data.client
 
     @property
     @override
@@ -131,6 +150,9 @@ class VantageEntity[T: SystemObject](Entity):
         self.async_on_remove(
             self.controller.subscribe(ObjectDeleted, self._on_object_deleted)
         )
+
+    async def async_init(self) -> None:
+        """Set up any additional initial state for the entity."""
 
     async def async_update(self) -> None:
         """Update the entity state (only used for polling entities)."""
