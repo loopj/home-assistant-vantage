@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
 from .const import LOGGER
-from .entity import VantageGMemEntity
+from .entity import VantageGMemEntity, add_entities_from_controller
 
 
 async def async_setup_entry(
@@ -21,9 +21,11 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every GMem object with a numeric data type as a number entity
-    VantageGMemNumberEntity.add_entities(
+    await add_entities_from_controller(
+        hass,
         entry,
         async_add_entities,
+        VantageGMemNumberEntity,
         vantage.gmem,
         filter=lambda obj: obj.is_int or obj.is_fixed,
     )

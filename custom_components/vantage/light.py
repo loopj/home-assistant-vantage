@@ -23,7 +23,7 @@ from homeassistant.util.color import brightness_to_value, value_to_brightness
 
 from .config_entry import VantageConfigEntry
 from .const import LOGGER
-from .entity import VantageEntity
+from .entity import VantageEntity, add_entities_from_controller
 
 # Vantage level range for converting between HA brightness and Vantage levels
 LEVEL_RANGE = (1, 100)
@@ -38,17 +38,32 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every "light" load as a light entity
-    VantageLoadLightEntity.add_entities(
-        entry, async_add_entities, vantage.loads, lambda load: load.is_light
+    await add_entities_from_controller(
+        hass,
+        entry,
+        async_add_entities,
+        VantageLoadLightEntity,
+        vantage.loads,
+        lambda load: load.is_light,
     )
 
     # Add every load group as a light entity
-    VantageLoadGroupLightEntity.add_entities(
-        entry, async_add_entities, vantage.load_groups
+    await add_entities_from_controller(
+        hass,
+        entry,
+        async_add_entities,
+        VantageLoadGroupLightEntity,
+        vantage.load_groups,
     )
 
     # Add every rgb load as a light entity
-    VantageRGBLoadLightEntity.add_entities(entry, async_add_entities, vantage.rgb_loads)
+    await add_entities_from_controller(
+        hass,
+        entry,
+        async_add_entities,
+        VantageRGBLoadLightEntity,
+        vantage.rgb_loads,
+    )
 
 
 class VantageLoadLightEntity(VantageEntity[Load], LightEntity):

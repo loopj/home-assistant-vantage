@@ -27,7 +27,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
 from .const import LOGGER
-from .entity import VantageEntity
+from .entity import VantageEntity, add_entities_from_controller
 
 # Set up the min/max temperature range for the thermostat
 VANTAGE_MIN_TEMP = 5
@@ -90,7 +90,9 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every thermostat as a climate entity
-    VantageClimateEntity.add_entities(entry, async_add_entities, vantage.thermostats)
+    await add_entities_from_controller(
+        hass, entry, async_add_entities, VantageClimateEntity, vantage.thermostats
+    )
 
 
 class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):

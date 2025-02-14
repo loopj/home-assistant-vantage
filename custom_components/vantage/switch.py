@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from aiovantage.objects import Load
 
 from .config_entry import VantageConfigEntry
-from .entity import VantageEntity, VantageGMemEntity
+from .entity import VantageEntity, VantageGMemEntity, add_entities_from_controller
 
 
 async def async_setup_entry(
@@ -21,16 +21,23 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every "relay" or "motor" load as a switch entity
-    VantageLoadSwitchEntity.add_entities(
+    await add_entities_from_controller(
+        hass,
         entry,
         async_add_entities,
+        VantageLoadSwitchEntity,
         vantage.loads,
         lambda obj: obj.is_relay or obj.is_motor,
     )
 
     # Add every GMem object with a boolean data type as a switch entity
-    VantageGMemSwitchEntity.add_entities(
-        entry, async_add_entities, vantage.gmem, lambda obj: obj.is_bool
+    await add_entities_from_controller(
+        hass,
+        entry,
+        async_add_entities,
+        VantageGMemSwitchEntity,
+        vantage.gmem,
+        lambda obj: obj.is_bool,
     )
 
 
