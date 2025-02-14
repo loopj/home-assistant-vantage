@@ -1,8 +1,6 @@
 """Handle forwarding Vantage events to the  Home Assistant event bus."""
 
-from typing import Any
-
-from aiovantage import VantageEvent
+from aiovantage.events import ObjectUpdated
 from aiovantage.objects import Button, Task
 
 from homeassistant.core import HomeAssistant
@@ -21,62 +19,52 @@ def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Set up Vantage events from a config entry."""
     vantage = entry.runtime_data.client
 
-    def handle_button_event(_event: VantageEvent, obj: Button, data: Any) -> None:
+    def on_button_updated(event: ObjectUpdated[Button]) -> None:
         """Handle button press/release events."""
-        if "state" not in data["attrs_changed"]:
+        if "state" not in event.attrs_changed:
             return
 
         payload = {
-            "button_id": obj.id,
-            "button_name": obj.name,
-            "button_position": obj.parent.position,
-            "button_text1": obj.text1,
-            "button_text2": obj.text2,
+            "button_id": event.obj.vid,
+            "button_name": event.obj.name,
+            "button_position": event.obj.parent.position,
+            "button_text1": event.obj.text1,
+            "button_text2": event.obj.text2,
         }
 
-        if station := vantage.stations.get(obj.parent.id):
-            payload["station_id"] = station.id
+        if station := vantage.stations.get(event.obj.parent.vid):
+            payload["station_id"] = station.vid
             payload["station_name"] = station.name
 
         hass.bus.async_fire(
-            EVENT_BUTTON_PRESSED if obj.is_down else EVENT_BUTTON_RELEASED,
+            EVENT_BUTTON_PRESSED if event.obj.is_down else EVENT_BUTTON_RELEASED,
             payload,
         )
 
-    def handle_task_event(_event: VantageEvent, obj: Task, data: Any) -> None:
+    def on_task_updated(event: ObjectUpdated[Task]) -> None:
         """Handle task events."""
-        if "running" in data["attrs_changed"]:
+        if "running" in event.attrs_changed:
             # Fire task started/stopped event
             payload = {
-                "task_id": obj.id,
-                "task_name": obj.name,
+                "task_id": event.obj.vid,
+                "task_name": event.obj.name,
             }
 
             hass.bus.async_fire(
-                EVENT_TASK_STARTED if obj.running else EVENT_TASK_STOPPED,
+                EVENT_TASK_STARTED if event.obj.running else EVENT_TASK_STOPPED,
                 payload,
             )
 
-        elif "state" in data["attrs_changed"]:
+        if "state" in event.attrs_changed:
             # Fire task state changed event
             payload = {
-                "task_id": obj.id,
-                "task_name": obj.name,
-                "task_state": obj.state,
+                "task_id": event.obj.vid,
+                "task_name": event.obj.name,
+                "task_state": event.obj.state,
             }
 
             hass.bus.async_fire(EVENT_TASK_STATE_CHANGED, payload)
 
-    # Subscribe to button events
-    entry.async_on_unload(
-        vantage.buttons.subscribe(
-            handle_button_event, event_filter=VantageEvent.OBJECT_UPDATED
-        )
-    )
-
-    # Subscribe to task events
-    entry.async_on_unload(
-        vantage.tasks.subscribe(
-            handle_task_event, event_filter=VantageEvent.OBJECT_UPDATED
-        )
-    )
+    # Subscribe to button and task events
+    entry.async_on_unload(vantage.buttons.subscribe(ObjectUpdated, on_button_updated))
+    entry.async_on_unload(vantage.tasks.subscribe(ObjectUpdated, on_task_updated))

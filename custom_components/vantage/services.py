@@ -45,6 +45,8 @@ def async_register_services(hass: HomeAssistant) -> None:
             if task := vantage.tasks.get(**query):
                 return task
 
+        LOGGER.warning("Task '%s' not found in any Vantage controller", id_or_name)
+
         return None
 
     async def start_task(call: ServiceCall) -> None:
@@ -53,9 +55,6 @@ def async_register_services(hass: HomeAssistant) -> None:
 
         if task := find_task(task_id_or_name):
             await task.start()
-            return
-
-        LOGGER.warning("Task '%s' not found in any Vantage controller", task_id_or_name)
 
     async def stop_task(call: ServiceCall) -> None:
         """Stop a Vantage task by id or name."""
@@ -63,9 +62,6 @@ def async_register_services(hass: HomeAssistant) -> None:
 
         if task := find_task(task_id_or_name):
             await task.stop()
-            return
-
-        LOGGER.warning("Task '%s' not found in any Vantage controller", task_id_or_name)
 
     # Register services
     if not hass.services.has_service(DOMAIN, SERVICE_START_TASK):

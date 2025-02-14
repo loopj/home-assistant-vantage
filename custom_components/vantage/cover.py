@@ -1,9 +1,8 @@
 """Support for Vantage cover entities."""
 
-import functools
-from typing import Any
+from typing import Any, override
 
-from aiovantage.controllers.blinds import BlindTypes
+from aiovantage.controllers import BlindGroupTypes, BlindTypes
 
 from homeassistant.components.cover import (
     CoverDeviceClass,
@@ -15,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
-from .entity import VantageEntity, async_register_vantage_objects
+from .entity import VantageEntity
 
 
 async def async_setup_entry(
@@ -23,27 +22,34 @@ async def async_setup_entry(
     entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Vantage cover entities from config entry."""
+    """Set up Vantage cover entities from a config entry."""
     vantage = entry.runtime_data.client
-    register_items = functools.partial(
-        async_register_vantage_objects, entry, async_add_entities
+
+    # Add every blind as a cover entity
+    VantageCoverEntity[BlindTypes].add_entities(
+        entry, async_add_entities, vantage.blinds
     )
 
-    # Set up all cover entities
-    register_items(vantage.blinds, VantageCover)
+    # Add every blind group as a cover entity
+    VantageCoverEntity[BlindGroupTypes].add_entities(
+        entry, async_add_entities, vantage.blind_groups
+    )
 
 
-class VantageCover(VantageEntity[BlindTypes], CoverEntity):
+class VantageCoverEntity[T: BlindTypes | BlindGroupTypes](
+    VantageEntity[T], CoverEntity
+):
     """Vantage blind cover entity."""
 
+    _attr_supported_features = (
+        CoverEntityFeature.OPEN
+        | CoverEntityFeature.CLOSE
+        | CoverEntityFeature.STOP
+        | CoverEntityFeature.SET_POSITION
+    )
+
+    @override
     def __post_init__(self) -> None:
-        """Initialize a Vantage Cover."""
-        self._attr_supported_features = (
-            CoverEntityFeature.OPEN
-            | CoverEntityFeature.CLOSE
-            | CoverEntityFeature.STOP
-            | CoverEntityFeature.SET_POSITION
-        )
         match self.obj.shade_type:
             case "Drapery":
                 self._attr_device_class = CoverDeviceClass.CURTAIN
@@ -51,33 +57,35 @@ class VantageCover(VantageEntity[BlindTypes], CoverEntity):
                 self._attr_device_class = CoverDeviceClass.SHADE
 
     @property
+    @override
     def is_closed(self) -> bool | None:
-        """Return if the cover is closed or not."""
         if self.obj.position is None:
             return None
+
         return self.obj.position < 1
 
     @property
+    @override
     def current_cover_position(self) -> int | None:
-        """Return the current position of cover."""
         if self.obj.position is None:
             return None
+
         return int(self.obj.position)
 
+    @override
     async def async_open_cover(self, **kwargs: Any) -> None:
-        """Open the cover."""
         await self.async_request_call(self.obj.open())
 
+    @override
     async def async_close_cover(self, **kwargs: Any) -> None:
-        """Close cover."""
         await self.async_request_call(self.obj.close())
 
+    @override
     async def async_stop_cover(self, **kwargs: Any) -> None:
-        """Stop the cover."""
         await self.async_request_call(self.obj.stop())
 
+    @override
     async def async_set_cover_position(self, **kwargs: Any) -> None:
-        """Move the cover to a specific position."""
         if ATTR_POSITION in kwargs:
             position = kwargs[ATTR_POSITION]
             await self.async_request_call(self.obj.set_position(position))
