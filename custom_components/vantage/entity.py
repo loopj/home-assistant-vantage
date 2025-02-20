@@ -47,17 +47,12 @@ async def add_entities_from_controller[T: SystemObject](
     """Add entities to HA from a Vantage controller."""
     # Add all entities currently known by the controller that match the filter
     objects = controller.filter(filter) if filter else controller
-    async_add_entities(
-        [await entity_cls.create(entry, controller, obj) for obj in objects]
-    )
+    async_add_entities([entity_cls(entry, controller, obj) for obj in objects])
 
     # Add any new entities added to the controller that match the filter
-    async def add_new_entity(obj: T) -> None:
-        if filter is None or filter(obj):
-            async_add_entities([await entity_cls.create(entry, controller, obj)])
-
     def on_object_added(event: ObjectAdded[T]) -> None:
-        hass.async_create_task(add_new_entity(event.obj))
+        if filter is None or filter(event.obj):
+            async_add_entities([entity_cls(entry, controller, event.obj)])
 
     entry.async_on_unload(controller.subscribe(ObjectAdded, on_object_added))
 
@@ -67,15 +62,7 @@ class VantageEntity[T: SystemObject](Entity):
 
     _attr_should_poll = False
     _attr_has_entity_name = True
-
-    @classmethod
-    async def create(
-        cls, entry: VantageConfigEntry, controller: Controller[T], obj: T
-    ) -> "VantageEntity[T]":
-        """Create a new entity and run its async_init method."""
-        entity = cls(entry, controller, obj)
-        await entity.async_init()
-        return entity
+    _attr_translation_key = "vantage"
 
     def __init__(self, entry: VantageConfigEntry, controller: Controller[T], obj: T):
         """Initialize a generic Vantage entity."""
@@ -142,9 +129,6 @@ class VantageEntity[T: SystemObject](Entity):
         self.async_on_remove(
             self.controller.subscribe(ObjectDeleted, self._on_object_deleted)
         )
-
-    async def async_init(self) -> None:
-        """Set up any additional initial state for the entity."""
 
     async def async_update(self) -> None:
         """Update the entity state (only used for polling entities)."""

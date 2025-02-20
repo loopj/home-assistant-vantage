@@ -1,0 +1,18 @@
+{
+  "entity": {
+    "climate": {
+      "vantage": {
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "low": "mdi:gauge-empty",
+              "medium": "mdi:gauge-low",
+              "high": "mdi:gauge",
+              "max": "mdi:gauge-full"
+            }
+          }
+        }
+      }
+    }
+  }
+}
