@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "home-assistant-vantage"
-version = "0.14.0b2"
+version = "0.14.0b3"
 description = "Home Assistant integration for Vantage InFusion home automation controllers."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -76,7 +76,7 @@ reportPrivateImportUsage = "none"
 reportIncompatibleVariableOverride = "none"
 
 [tool.bumpver]
-current_version = "0.14.0b2"
+current_version = "0.14.0b3"
 version_pattern = "MAJOR.MINOR.PATCH[PYTAGNUM]"
 commit_message = "Bump version {old_version} -> {new_version}"
 commit = true
