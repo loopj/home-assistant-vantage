@@ -40,5 +40,18 @@
         "title": "Discovered Vantage controller"
       }
     }
+  },
+  "entity": {
+    "climate": {
+      "vantage": {
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "max": "Max"
+            }
+          }
+        }
+      }
+    }
   }
 }
