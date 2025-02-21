@@ -26,13 +26,13 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every blind as a cover entity
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageCoverEntity, vantage.blinds
+    add_entities_from_controller(
+        entry, async_add_entities, VantageCoverEntity, vantage.blinds
     )
 
     # Add every blind group as a cover entity
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageCoverEntity, vantage.blind_groups
+    add_entities_from_controller(
+        entry, async_add_entities, VantageCoverEntity, vantage.blind_groups
     )
 
 

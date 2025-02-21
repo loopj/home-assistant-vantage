@@ -34,28 +34,28 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add all temperature objects as sensor entities
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageTempSensorEntity, vantage.temperatures
+    add_entities_from_controller(
+        entry, async_add_entities, VantageTempSensorEntity, vantage.temperatures
     )
 
     # Add all anemo sensor objects as sensor entities
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageAnemoSensorEntity, vantage.anemo_sensors
+    add_entities_from_controller(
+        entry, async_add_entities, VantageAnemoSensorEntity, vantage.anemo_sensors
     )
 
     # Add all light sensor objects as sensor entities
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageLightSensorEntity, vantage.light_sensors
+    add_entities_from_controller(
+        entry, async_add_entities, VantageLightSensorEntity, vantage.light_sensors
     )
 
     # Add all omni sensor objects as sensor entities
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageOmniSensorEntity, vantage.omni_sensors
+    add_entities_from_controller(
+        entry, async_add_entities, VantageOmniSensorEntity, vantage.omni_sensors
     )
 
     # Add all master IP addresses as sensor entities
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageMasterIPSensorEntity, vantage.masters
+    add_entities_from_controller(
+        entry, async_add_entities, VantageMasterIPSensorEntity, vantage.masters
     )
 
 

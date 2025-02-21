@@ -38,8 +38,7 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every "light" load as a light entity
-    await add_entities_from_controller(
-        hass,
+    add_entities_from_controller(
         entry,
         async_add_entities,
         VantageLoadLightEntity,
@@ -48,21 +47,13 @@ async def async_setup_entry(
     )
 
     # Add every load group as a light entity
-    await add_entities_from_controller(
-        hass,
-        entry,
-        async_add_entities,
-        VantageLoadGroupLightEntity,
-        vantage.load_groups,
+    add_entities_from_controller(
+        entry, async_add_entities, VantageLoadGroupLightEntity, vantage.load_groups
     )
 
     # Add every rgb load as a light entity
-    await add_entities_from_controller(
-        hass,
-        entry,
-        async_add_entities,
-        VantageRGBLoadLightEntity,
-        vantage.rgb_loads,
+    add_entities_from_controller(
+        entry, async_add_entities, VantageRGBLoadLightEntity, vantage.rgb_loads
     )
 
 

@@ -92,16 +92,15 @@ async def async_setup_entry(
     if vantage.thermostats.status_type == StatusType.OBJECT:
         # If we are using "object" status updates, add every thermostat as a climate
         # entity. This is the default behavior for newer firmware versions (3.x+).
-        await add_entities_from_controller(
-            hass, entry, async_add_entities, VantageClimateEntity, vantage.thermostats
+        add_entities_from_controller(
+            entry, async_add_entities, VantageClimateEntity, vantage.thermostats
         )
     else:
         # If we are using "category" status updates, add only "Thermostat" objects
         # as legacy climate entities. This is for compatibility with older firmware
         # versions (2.x) where status updates for temperatures are only provided by
         # the "child" Temperature objects.
-        await add_entities_from_controller(
-            hass,
+        add_entities_from_controller(
             entry,
             async_add_entities,
             VantageLegacyClimateEntity,

@@ -36,8 +36,7 @@ def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> No
             ent_reg.async_remove(entity.entity_id)
 
 
-async def add_entities_from_controller[T: SystemObject](
-    hass: HomeAssistant,
+def add_entities_from_controller[T: SystemObject](
     entry: VantageConfigEntry,
     async_add_entities: AddEntitiesCallback,
     entity_cls: type["VantageEntity[T]"],
