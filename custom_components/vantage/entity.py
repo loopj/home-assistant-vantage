@@ -63,14 +63,13 @@ class VantageEntity[T: SystemObject](Entity):
     _attr_has_entity_name = True
     _attr_translation_key = "vantage"
 
+    parent_obj: SystemObject | None = None
+
     def __init__(self, entry: VantageConfigEntry, controller: Controller[T], obj: T):
         """Initialize a generic Vantage entity."""
         self.entry = entry
         self.controller = controller
         self.obj = obj
-        self.parent_obj: SystemObject | None = None
-
-        self._attr_unique_id = str(obj.vid)
 
         self.__post_init__()
 
@@ -81,6 +80,11 @@ class VantageEntity[T: SystemObject](Entity):
     def client(self) -> Vantage:
         """Return the Vantage client."""
         return self.entry.runtime_data.client
+
+    @property
+    @override
+    def unique_id(self) -> str:
+        return str(self.obj.vid)
 
     @property
     @override
