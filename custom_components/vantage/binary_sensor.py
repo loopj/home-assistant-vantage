@@ -21,8 +21,8 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every dry contact as a binary sensor entity
-    await add_entities_from_controller(
-        hass, entry, async_add_entities, VantageBinarySensorEntity, vantage.dry_contacts
+    add_entities_from_controller(
+        entry, async_add_entities, VantageBinarySensorEntity, vantage.dry_contacts
     )
 
 

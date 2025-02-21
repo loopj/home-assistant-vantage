@@ -19,8 +19,7 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every GMem object with a text data type as a text entity
-    await add_entities_from_controller(
-        hass,
+    add_entities_from_controller(
         entry,
         async_add_entities,
         VantageGMemTextEntity,

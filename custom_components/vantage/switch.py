@@ -21,8 +21,7 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every "relay" or "motor" load as a switch entity
-    await add_entities_from_controller(
-        hass,
+    add_entities_from_controller(
         entry,
         async_add_entities,
         VantageLoadSwitchEntity,
@@ -31,8 +30,7 @@ async def async_setup_entry(
     )
 
     # Add every GMem object with a boolean data type as a switch entity
-    await add_entities_from_controller(
-        hass,
+    add_entities_from_controller(
         entry,
         async_add_entities,
         VantageGMemSwitchEntity,

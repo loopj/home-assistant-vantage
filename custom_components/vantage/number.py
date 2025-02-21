@@ -21,8 +21,7 @@ async def async_setup_entry(
     vantage = entry.runtime_data.client
 
     # Add every GMem object with a numeric data type as a number entity
-    await add_entities_from_controller(
-        hass,
+    add_entities_from_controller(
         entry,
         async_add_entities,
         VantageGMemNumberEntity,
