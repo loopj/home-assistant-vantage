@@ -3,7 +3,6 @@
 from typing import Any, cast, override
 
 from aiovantage.controllers import RGBLoadTypes
-from aiovantage.object_interfaces import ColorTemperatureInterface, RGBLoadInterface
 from aiovantage.objects import Load, LoadGroup
 
 from homeassistant.components.light import (
@@ -162,11 +161,18 @@ class VantageRGBLoadLightEntity(VantageEntity[RGBLoadTypes], LightEntity):
     @property
     @override
     def supported_color_modes(self) -> set[ColorMode]:
-        if isinstance(self.obj, RGBLoadInterface):
-            return {ColorMode.HS, ColorMode.RGB, ColorMode.RGBW}
+        if hasattr(self.obj, "color_type"):
+            if self.obj.color_type.value == "HSL":
+                return {ColorMode.HS}
 
-        if isinstance(self.obj, ColorTemperatureInterface):
-            return {ColorMode.COLOR_TEMP}
+            if self.obj.color_type.value == "RGB":
+                return {ColorMode.RGB}
+
+            if self.obj.color_type.value == "RGBW":
+                return {ColorMode.RGBW}
+
+            if self.obj.color_type.value == "CCT":
+                return {ColorMode.COLOR_TEMP}
 
         return {ColorMode.BRIGHTNESS}
 
