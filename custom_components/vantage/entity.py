@@ -1,6 +1,6 @@
 """Support for generic Vantage entities."""
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterable
 from typing import override
 
 from aiovantage import Vantage
@@ -25,6 +25,32 @@ from .const import DOMAIN
 from .device import vantage_device_info
 
 
+def add_entities_from_controller[T: SystemObject](
+    entry: VantageConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+    entity_cls: type["VantageEntity[T]"],
+    controller: Controller[T],
+    filter: Callable[[T], bool] | None = None,
+) -> None:
+    """Add entities to HA from a Vantage controller."""
+
+    def add_entities(objects: Iterable[T]) -> None:
+        async_add_entities(
+            entity_cls(entry, controller, obj)
+            for obj in objects
+            if filter is None or filter(obj)
+        )
+
+    # Add entities for all objects currently known by this controller
+    add_entities(controller)
+
+    # Add entities for any new objects added to this controller
+    def on_object_added(event: ObjectAdded[T]) -> None:
+        add_entities([event.obj])
+
+    entry.async_on_unload(controller.subscribe(ObjectAdded, on_object_added))
+
+
 def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Remove entities from HA that are no longer in the Vantage controller."""
     vantage = entry.runtime_data.client
@@ -34,26 +60,6 @@ def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> No
         vantage_id = int(entity.unique_id.split(":")[0])
         if vantage_id not in vantage:
             ent_reg.async_remove(entity.entity_id)
-
-
-def add_entities_from_controller[T: SystemObject](
-    entry: VantageConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-    entity_cls: type["VantageEntity[T]"],
-    controller: Controller[T],
-    filter: Callable[[T], bool] | None = None,
-) -> None:
-    """Add entities to HA from a Vantage controller."""
-    # Add all entities currently known by the controller that match the filter
-    queryset = controller.filter(filter) if filter else controller
-    async_add_entities(entity_cls(entry, controller, obj) for obj in queryset)
-
-    # Add any new entities added to the controller that match the filter
-    def on_object_added(event: ObjectAdded[T]) -> None:
-        if filter is None or filter(event.obj):
-            async_add_entities([entity_cls(entry, controller, event.obj)])
-
-    entry.async_on_unload(controller.subscribe(ObjectAdded, on_object_added))
 
 
 class VantageEntity[T: SystemObject](Entity):
