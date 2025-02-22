@@ -45,8 +45,8 @@ def add_entities_from_controller[T: SystemObject](
 ) -> None:
     """Add entities to HA from a Vantage controller."""
     # Add all entities currently known by the controller that match the filter
-    objects = controller.filter(filter) if filter else controller
-    async_add_entities([entity_cls(entry, controller, obj) for obj in objects])
+    queryset = controller.filter(filter) if filter else controller
+    async_add_entities(entity_cls(entry, controller, obj) for obj in queryset)
 
     # Add any new entities added to the controller that match the filter
     def on_object_added(event: ObjectAdded[T]) -> None:
@@ -70,11 +70,6 @@ class VantageEntity[T: SystemObject](Entity):
         self.entry = entry
         self.controller = controller
         self.obj = obj
-
-        self.__post_init__()
-
-    def __post_init__(self) -> None:
-        """Run after entity is initialized."""
 
     @property
     def client(self) -> Vantage:
