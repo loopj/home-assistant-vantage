@@ -48,13 +48,13 @@ class VantageCoverEntity[T: BlindTypes | BlindGroupTypes](
         | CoverEntityFeature.SET_POSITION
     )
 
+    @property
     @override
-    def __post_init__(self) -> None:
-        match self.obj.shade_type:
-            case "Drapery":
-                self._attr_device_class = CoverDeviceClass.CURTAIN
-            case _:
-                self._attr_device_class = CoverDeviceClass.SHADE
+    def device_class(self) -> str | None:
+        if self.obj.shade_type == "Drapery":
+            return CoverDeviceClass.CURTAIN
+
+        return CoverDeviceClass.SHADE
 
     @property
     @override

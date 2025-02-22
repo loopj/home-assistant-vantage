@@ -2,6 +2,7 @@
 
 from typing import override
 
+from aiovantage.controllers import Controller
 from aiovantage.objects import DryContact
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
@@ -29,8 +30,15 @@ async def async_setup_entry(
 class VantageBinarySensorEntity(VantageEntity[DryContact], BinarySensorEntity):
     """Binary sensor entity provided by a Vantage DryContact object."""
 
-    @override
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        entry: VantageConfigEntry,
+        controller: Controller[DryContact],
+        obj: DryContact,
+    ):
+        """Initialize a Vantage binary sensor entity."""
+        super().__init__(entry, controller, obj)
+
         # If this is a thermostat contact, attach it to the thermostat device
         if parent := self.client.thermostats.get(self.obj.parent.vid):
             self.parent_obj = parent

@@ -2,8 +2,8 @@
 
 from typing import Any, cast, override
 
-from aiovantage import Vantage
 from aiovantage.controllers import RGBLoadTypes
+from aiovantage.object_interfaces import ColorTemperatureInterface, RGBLoadInterface
 from aiovantage.objects import Load, LoadGroup
 
 from homeassistant.components.light import (
@@ -22,7 +22,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util.color import brightness_to_value, value_to_brightness
 
 from .config_entry import VantageConfigEntry
-from .const import LOGGER
 from .entity import VantageEntity, add_entities_from_controller
 
 # Vantage level range for converting between HA brightness and Vantage levels
@@ -60,17 +59,38 @@ async def async_setup_entry(
 class VantageLoadLightEntity(VantageEntity[Load], LightEntity):
     """Vantage load light entity."""
 
+    @property
+    def is_dimmable(self) -> bool:
+        """Determine if a load is dimmable based on its power profile."""
+        if hasattr(self.obj, "power_profile"):
+            if power_profile := self.client.power_profiles.get(self.obj.power_profile):
+                return power_profile.is_dimmable
+
+        return False
+
+    @property
     @override
-    def __post_init__(self) -> None:
-        # Set up the light based on the power profile
-        self._attr_supported_color_modes: set[ColorMode] = set()
-        if _is_dimmable_load(self.client, self.obj):
-            self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
-            self._attr_color_mode = ColorMode.BRIGHTNESS
-            self._attr_supported_features |= LightEntityFeature.TRANSITION
-        else:
-            self._attr_supported_color_modes.add(ColorMode.ONOFF)
-            self._attr_color_mode = ColorMode.ONOFF
+    def supported_features(self) -> int:
+        if self.is_dimmable:
+            return LightEntityFeature.TRANSITION
+
+        return LightEntityFeature(0)
+
+    @property
+    @override
+    def supported_color_modes(self) -> set[ColorMode]:
+        if self.is_dimmable:
+            return {ColorMode.BRIGHTNESS}
+
+        return {ColorMode.ONOFF}
+
+    @property
+    @override
+    def color_mode(self) -> ColorMode:
+        if self.is_dimmable:
+            return ColorMode.BRIGHTNESS
+
+        return ColorMode.ONOFF
 
     @property
     @override
@@ -102,12 +122,10 @@ class VantageLoadLightEntity(VantageEntity[Load], LightEntity):
 class VantageLoadGroupLightEntity(VantageEntity[LoadGroup], LightEntity):
     """Vantage load group light entity."""
 
-    @override
-    def __post_init__(self) -> None:
-        self._attr_icon = "mdi:lightbulb-group"
-        self._attr_supported_color_modes: set[str] = {ColorMode.BRIGHTNESS}
-        self._attr_color_mode = ColorMode.BRIGHTNESS
-        self._attr_supported_features |= LightEntityFeature.TRANSITION
+    _attr_icon = "mdi:lightbulb-group"
+    _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+    _attr_color_mode = ColorMode.BRIGHTNESS
+    _attr_supported_features = LightEntityFeature.TRANSITION
 
     @property
     @override
@@ -139,40 +157,52 @@ class VantageLoadGroupLightEntity(VantageEntity[LoadGroup], LightEntity):
 class VantageRGBLoadLightEntity(VantageEntity[RGBLoadTypes], LightEntity):
     """Vantage RGB load light entity."""
 
-    def __post_init__(self) -> None:
-        """Initialize the light."""
-        # Set up the light based on the color type
-        self._attr_supported_color_modes: set[str] = set()
+    _attr_supported_features = LightEntityFeature.TRANSITION
 
-        match self.obj.color_type:
-            case self.obj.ColorType.HSL:
-                self._attr_supported_color_modes.add(ColorMode.HS)
-                self._attr_color_mode = ColorMode.HS
-                self._attr_supported_features |= LightEntityFeature.TRANSITION
-            case self.obj.ColorType.RGB:
-                self._attr_supported_color_modes.add(ColorMode.RGB)
-                self._attr_color_mode = ColorMode.RGB
-                self._attr_supported_features |= LightEntityFeature.TRANSITION
-            case self.obj.ColorType.RGBW:
-                self._attr_supported_color_modes.add(ColorMode.RGBW)
-                self._attr_color_mode = ColorMode.RGBW
-            case self.obj.ColorType.CCT:
-                self._attr_supported_color_modes.add(ColorMode.COLOR_TEMP)
-                self._attr_color_mode = ColorMode.COLOR_TEMP
-                self._attr_min_color_temp_kelvin = self.obj.min_temp
-                self._attr_max_color_temp_kelvin = self.obj.max_temp
-                self._attr_supported_features |= LightEntityFeature.TRANSITION
-            case _:
-                # Treat all other color types as dimmable non-color lights
-                self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
-                self._attr_color_mode = ColorMode.BRIGHTNESS
-                self._attr_supported_features |= LightEntityFeature.TRANSITION
+    @property
+    @override
+    def supported_color_modes(self) -> set[ColorMode]:
+        if isinstance(self.obj, RGBLoadInterface):
+            return {ColorMode.HS, ColorMode.RGB, ColorMode.RGBW}
 
-                LOGGER.warning(
-                    "Unsupported color type %s for RGB light %s",
-                    self.obj.color_type,
-                    self.obj.name,
-                )
+        if isinstance(self.obj, ColorTemperatureInterface):
+            return {ColorMode.COLOR_TEMP}
+
+        return {ColorMode.BRIGHTNESS}
+
+    @property
+    @override
+    def color_mode(self) -> ColorMode:
+        if hasattr(self.obj, "color_type"):
+            if self.obj.color_type.value == "HSL":
+                return ColorMode.HS
+
+            if self.obj.color_type.value == "RGB":
+                return ColorMode.RGB
+
+            if self.obj.color_type.value == "RGBW":
+                return ColorMode.RGBW
+
+            if self.obj.color_type.value == "CCT":
+                return ColorMode.COLOR_TEMP
+
+        return ColorMode.BRIGHTNESS
+
+    @property
+    @override
+    def min_color_temp_kelvin(self) -> int:
+        if hasattr(self.obj, "min_temp"):
+            return self.obj.min_temp
+
+        return super().min_color_temp_kelvin
+
+    @property
+    @override
+    def max_color_temp_kelvin(self) -> int:
+        if hasattr(self.obj, "max_temp"):
+            return self.obj.max_temp
+
+        return super().max_color_temp_kelvin
 
     @property
     @override
@@ -212,48 +242,58 @@ class VantageRGBLoadLightEntity(VantageEntity[RGBLoadTypes], LightEntity):
 
     @override
     async def async_turn_on(self, **kwargs: Any) -> None:
+        transition = kwargs.get(ATTR_TRANSITION, 0)
+        brightness = kwargs.get(ATTR_BRIGHTNESS)
+
         if ATTR_RGBW_COLOR in kwargs:
-            # Turn on the light with the provided RGBW color
             rgbw: tuple[int, int, int, int] = kwargs[ATTR_RGBW_COLOR]
 
             # Scale the brightness of the color if provided
-            if brightness := kwargs.get(ATTR_BRIGHTNESS) is not None:
+            if brightness is not None:
                 rgbw = _scale_color_brightness(rgbw, brightness)
 
-            await self.async_request_call(self.obj.set_rgbw(*rgbw))
+            # Turn on the light with the provided RGBW color, with optional transition
+            if transition:
+                await self.async_request_call(self.obj.dissolve_rgbw(*rgbw, transition))
+            else:
+                await self.async_request_call(self.obj.set_rgbw(*rgbw))
 
         elif ATTR_RGB_COLOR in kwargs:
-            # Turn on the light with the provided RGB color
             rgb: tuple[int, int, int] = kwargs[ATTR_RGB_COLOR]
-            transition = kwargs.get(ATTR_TRANSITION, 0)
 
             # Scale the brightness of the color if provided
-            if brightness := kwargs.get(ATTR_BRIGHTNESS) is not None:
+            if brightness is not None:
                 rgb = _scale_color_brightness(rgb, brightness)
 
-            await self.async_request_call(self.obj.dissolve_rgb(*rgb, transition))
+            # Turn on the light with the provided RGB color, with optional transition
+            if transition:
+                await self.async_request_call(self.obj.dissolve_rgb(*rgb, transition))
+            else:
+                await self.async_request_call(self.obj.set_rgb(*rgb))
 
         elif ATTR_HS_COLOR in kwargs:
-            # Turn on the light with the provided HS color and brightness, default to
-            # 100% brightness if not provided
             hue, saturation = kwargs[ATTR_HS_COLOR]
-            level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
-            transition = kwargs.get(ATTR_TRANSITION, 0)
 
-            await self.async_request_call(
-                self.obj.dissolve_hsl(hue, saturation, level, transition)
-            )
+            # Scale the brightness, default to 100%
+            level = brightness_to_value(LEVEL_RANGE, brightness) if brightness else 100
+
+            # Turn on the light with the provided HS color, with optional transition
+            if transition:
+                await self.async_request_call(
+                    self.obj.dissolve_hsl(hue, saturation, level, transition)
+                )
+            else:
+                await self.async_request_call(self.obj.set_hsl(hue, saturation, level))
 
         else:
-            # Set the color temperature, if provided
             if ATTR_COLOR_TEMP_KELVIN in kwargs:
                 color_temp: int = kwargs[ATTR_COLOR_TEMP_KELVIN]
 
+                # Set the color temperature, if provided
                 await self.async_request_call(self.obj.set_color_temp(color_temp))
 
             # Turn on the light with the provided brightness, default to 100%
-            transition = kwargs.get(ATTR_TRANSITION, 0)
-            level = brightness_to_value(LEVEL_RANGE, kwargs.get(ATTR_BRIGHTNESS, 255))
+            level = brightness_to_value(LEVEL_RANGE, brightness) if brightness else 100
 
             await self.async_request_call(self.obj.turn_on(transition, level))
 
@@ -270,9 +310,3 @@ def _scale_color_brightness[T: tuple[int, ...]](color: T, brightness: int | None
         return color
 
     return cast(T, tuple(int(round(c * brightness / 255)) for c in color))
-
-
-def _is_dimmable_load(client: Vantage, obj: Load) -> bool:
-    # Determine if a load is dimmable based on its power profile
-    power_profile = client.power_profiles.get(obj.power_profile)
-    return power_profile is not None and power_profile.is_dimmable
