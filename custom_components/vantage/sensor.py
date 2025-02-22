@@ -5,9 +5,14 @@ from decimal import Decimal
 import socket
 from typing import override
 
+from aiovantage.controllers import Controller
 from aiovantage.objects import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+)
 from homeassistant.const import (
     LIGHT_LUX,
     EntityCategory,
@@ -23,6 +28,24 @@ from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, add_entities_from_controller
 
 FOOT_CANDLES_TO_LUX = 10.7639
+
+OMNISENSOR_ENTITY_DESCRIPTIONS = {
+    "Current": SensorEntityDescription(
+        key="Current",
+        device_class=SensorDeviceClass.CURRENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+    ),
+    "Power": SensorEntityDescription(
+        key="Power",
+        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+    ),
+    "Temperature": SensorEntityDescription(
+        key="Temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+}
 
 
 async def async_setup_entry(
@@ -67,8 +90,15 @@ class VantageTempSensorEntity(VantageEntity[Temperature], SensorEntity):
     _attr_state_class = "measurement"
     _attr_suggested_display_precision = 1
 
-    @override
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        entry: VantageConfigEntry,
+        controller: Controller[Temperature],
+        obj: Temperature,
+    ):
+        """Initialize a Vantage temperature sensor."""
+        super().__init__(entry, controller, obj)
+
         # If this is a thermostat temperature sensor, attach it to the thermostat device
         if parent := self.client.thermostats.get(self.obj.parent.vid):
             self.parent_obj = parent
@@ -116,31 +146,27 @@ class VantageOmniSensorEntity(VantageEntity[OmniSensor], SensorEntity):
     _attr_should_poll = True
     _attr_state_class = "measurement"
 
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        entry: VantageConfigEntry,
+        controller: Controller[OmniSensor],
+        obj: OmniSensor,
+    ):
         """Initialize a Vantage omnisensor."""
+        super().__init__(entry, controller, obj)
+
+        # Set the entity description based on the OmniSensor model
+        if obj.model in OMNISENSOR_ENTITY_DESCRIPTIONS:
+            self.entity_description = OMNISENSOR_ENTITY_DESCRIPTIONS[obj.model]
+
         # If this is a module omnisensor, attach it to the module device and disable by default
         if parent := self.client.modules.get(self.obj.parent.vid):
             self.parent_obj = parent
             self._attr_entity_registry_enabled_default = False
 
-        # Set the device class and unit of measurement based on the sensor type
-        match self.obj.model:
-            case "Current":
-                self._attr_device_class = SensorDeviceClass.CURRENT
-                self._attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
-                self._attr_suggested_display_precision = 3
-            case "Power":
-                self._attr_device_class = SensorDeviceClass.POWER
-                self._attr_native_unit_of_measurement = UnitOfPower.WATT
-            case "Temperature":
-                self._attr_device_class = SensorDeviceClass.TEMPERATURE
-                self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-            case _:
-                pass
-
     @property
+    @override
     def native_value(self) -> int | Decimal | None:
-        """Return the value reported by the sensor."""
         return self.obj.level
 
 
@@ -151,13 +177,14 @@ class VantageMasterIPSensorEntity(VantageEntity[Master], SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
-    def name(self) -> str | None:
-        """Return the name of the entity."""
-        return "IP Address"
+    @override
+    def unique_id(self) -> str:
+        return f"{self.obj.vid}:ip_address"
 
-    def __post_init__(self) -> None:
-        """Initialize a Vantage master IP address."""
-        self._attr_unique_id = f"{self.obj.vid}:ip_address"
-
+    @property
+    @override
+    def native_value(self) -> str | None:
         with contextlib.suppress(socket.gaierror):
-            self._attr_native_value = socket.gethostbyname(self.client.host)
+            return socket.gethostbyname(self.client.host)
+
+        return None
