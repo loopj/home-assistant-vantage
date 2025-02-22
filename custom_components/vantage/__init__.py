@@ -23,7 +23,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util.ssl import get_default_no_verify_context
 
 from .config_entry import VantageConfigEntry, VantageData
-from .device import async_setup_devices
+from .device import async_cleanup_devices, async_setup_devices
 from .entity import async_cleanup_entities
 from .events import async_setup_events
 from .migrate import async_migrate_data
@@ -74,7 +74,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
         # Generate events for button presses, etc.
         async_setup_events(hass, entry)
 
-        # Clean up any orphaned entities
+        # Clean up any orphaned devices and entities
+        async_cleanup_devices(hass, entry)
         async_cleanup_entities(hass, entry)
 
         # Run any migrations

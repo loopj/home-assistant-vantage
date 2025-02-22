@@ -1,7 +1,6 @@
 """Support for Vantage devices."""
 
 from typing import Protocol, runtime_checkable
-from collections.abc import Awaitable, Callable
 
 from aiovantage import Vantage
 from aiovantage.controllers import Controller
@@ -22,62 +21,67 @@ from .config_entry import VantageConfigEntry
 from .const import DOMAIN
 
 
-async def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
-    """Set up Vantage devices in the device registry."""
+async def add_devices_from_controller[T: SystemObject](
+    hass: HomeAssistant, entry: VantageConfigEntry, controller: Controller[T]
+) -> None:
+    """Add devices to the device registry from a Vantage controller."""
     vantage = entry.runtime_data.client
     dev_reg = dr.async_get(hass)
 
-    async def register_items[T: SystemObject](
-        controller: Controller[T],
-        extra_info_fn: Callable[[T], Awaitable[DeviceInfo]] | None = None,
-    ) -> None:
-        # Register a device in the device registry
-        async def add_or_update_device(obj: T) -> dr.DeviceEntry:
-            device_info = vantage_device_info(vantage, obj)
-            if extra_info_fn:
-                device_info.update(await extra_info_fn(obj))
+    # Register a device in the device registry
+    async def add_or_update_device(obj: T) -> None:
+        device_info = vantage_device_info(vantage, obj)
+        if isinstance(obj, Master):
+            device_info["sw_version"] = await obj.get_application_version()
 
-            return dev_reg.async_get_or_create(
-                config_entry_id=entry.entry_id, **device_info
-            )
+        dev_reg.async_get_or_create(config_entry_id=entry.entry_id, **device_info)
 
-        # Add all current members of this controller
-        for obj in controller:
-            await add_or_update_device(obj)
+    # Add devices for all objects currently known by this controller
+    for obj in controller:
+        await add_or_update_device(obj)
 
-        # Monitor for changes to the controller
-        def on_device_added(event: ObjectAdded[T]) -> None:
-            hass.async_create_task(add_or_update_device(event.obj))
+    # Add entities for any new objects added to this controller
+    def on_device_added(event: ObjectAdded[T]) -> None:
+        hass.async_create_task(add_or_update_device(event.obj))
 
-        def on_device_updated(event: ObjectUpdated[T]) -> None:
-            hass.async_create_task(add_or_update_device(event.obj))
+    entry.async_on_unload(controller.subscribe(ObjectAdded, on_device_added))
 
-        def on_device_deleted(event: ObjectDeleted[T]) -> None:
-            if device := dev_reg.async_get_device({(DOMAIN, str(event.obj.vid))}):
-                dev_reg.async_remove_device(device.id)
+    # Update devices when objects are updated
+    def on_device_updated(event: ObjectUpdated[T]) -> None:
+        hass.async_create_task(add_or_update_device(event.obj))
 
-        entry.async_on_unload(controller.subscribe(ObjectAdded, on_device_added))
-        entry.async_on_unload(controller.subscribe(ObjectDeleted, on_device_deleted))
-        entry.async_on_unload(controller.subscribe(ObjectUpdated, on_device_updated))
+    entry.async_on_unload(controller.subscribe(ObjectUpdated, on_device_updated))
 
-    # Register "master" devices, additionally fetching the firmware version
-    async def extra_master_info(obj: Master) -> DeviceInfo:
-        return DeviceInfo(sw_version=await obj.get_application_version())
+    # Remove devices when objects are deleted
+    def on_device_deleted(event: ObjectDeleted[T]) -> None:
+        if device := dev_reg.async_get_device({(DOMAIN, str(event.obj.vid))}):
+            dev_reg.async_remove_device(device.id)
 
-    await register_items(vantage.masters, extra_master_info)
+    entry.async_on_unload(controller.subscribe(ObjectDeleted, on_device_deleted))
 
-    # Register "parent" devices (controllers, modules, port devices, and stations)
-    await register_items(vantage.modules)
-    await register_items(vantage.port_devices)
-    await register_items(vantage.stations)
 
-    # Clean up any devices for objects that no longer exist on the Vantage controller
+def async_cleanup_devices(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
+    """Remove devices from HA that are no longer in the Vantage controller."""
+    vantage = entry.runtime_data.client
+    dev_reg = dr.async_get(hass)
+
     for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
         # Device IDs always start with the object ID, followed by an optional suffix
         device_id = next(x[1] for x in device.identifiers if x[0] == DOMAIN)
         vantage_id = int(device_id.split(":")[0])
         if vantage_id not in vantage:
             dev_reg.async_remove_device(device.id)
+
+
+async def async_setup_devices(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
+    """Set up Vantage devices in the device registry."""
+    vantage = entry.runtime_data.client
+
+    # Register "parent" devices (controllers, modules, port devices, and stations)
+    await add_devices_from_controller(hass, entry, vantage.masters)
+    await add_devices_from_controller(hass, entry, vantage.modules)
+    await add_devices_from_controller(hass, entry, vantage.port_devices)
+    await add_devices_from_controller(hass, entry, vantage.stations)
 
 
 @runtime_checkable
