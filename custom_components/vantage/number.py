@@ -52,6 +52,7 @@ NUMBER_ENTITY_DESCRIPTIONS: dict[str, NumberEntityDescription] = {
     # Up to 24 hour delay, with millisecond precision
     "Delay": NumberEntityDescription(
         key="Delay",
+        device_class=NumberDeviceClass.DURATION,
         native_min_value=0,
         native_max_value=24 * 60 * 60 * 1000,
         native_unit_of_measurement=UnitOfTime.MILLISECONDS,
@@ -59,6 +60,7 @@ NUMBER_ENTITY_DESCRIPTIONS: dict[str, NumberEntityDescription] = {
     # Number of seconds, up to 7 days, with millisecond precision
     "Seconds": NumberEntityDescription(
         key="Seconds",
+        device_class=NumberDeviceClass.DURATION,
         native_min_value=0,
         native_max_value=7 * 24 * 60 * 60,
         native_unit_of_measurement=UnitOfTime.SECONDS,
