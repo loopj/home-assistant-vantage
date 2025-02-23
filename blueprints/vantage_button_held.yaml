@@ -1,0 +1,66 @@
+blueprint:
+  name: Vantage Button Pressed or Held
+  description: Perform an action when a Vantage button is pressed or held for more than a specified time.
+  domain: automation
+
+  input:
+    button_ids:
+      name: Vantage Button IDs
+      description: The Vantage IDs of the buttons to monitor.
+      selector:
+        text:
+          multiple: true
+          type: number
+
+    hold_time:
+      name: Hold Time (seconds)
+      description: Minimum duration the button must be held to trigger the hold action.
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+          unit_of_measurement: seconds
+
+    press_action:
+      name: Press Action
+      description: The action to run when the button is briefly pressed.
+      selector:
+        action:
+
+    hold_action:
+      name: Hold Action
+      description: The action to run when the button is held for the specified time.
+      selector:
+        action:
+
+trigger:
+  - platform: event
+    event_type: vantage_button_pressed
+
+variables:
+  button_ids: !input button_ids
+
+condition:
+  - condition: template
+    value_template: "{{ trigger.event.data.button_id | string in button_ids }}"
+
+action:
+  - variables:
+      triggered_button_id: "{{ trigger.event.data.button_id }}"
+
+  - wait_for_trigger:
+      - platform: event
+        event_type: vantage_button_released
+        event_data:
+          button_id: "{{ triggered_button_id }}"
+    timeout:
+      seconds: !input hold_time
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ wait.trigger is none }}"
+        sequence: !input hold_action
+      - conditions: []
+        sequence: !input press_action
