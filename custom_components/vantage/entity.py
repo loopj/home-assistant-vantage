@@ -120,7 +120,7 @@ class VantageEntity[T: SystemObject](Entity):
                 self._attr_available = False
 
             raise HomeAssistantError(
-                f"Request for {self.entity_id} ({self.obj.vid}) failed: {err}"
+                f"Request for {self.entity_id} failed: {err}"
             ) from err
 
     @override
@@ -141,14 +141,12 @@ class VantageEntity[T: SystemObject](Entity):
             self._attr_available = False
             if not self._unavailable_logged:
                 self._unavailable_logged = True
-                LOGGER.info(
-                    "Entity %s (%d) unavailable: %s", self.entity_id, self.obj.vid, err
-                )
+                LOGGER.info("Entity %s unavailable: %s", self.entity_id, err)
         else:
             self._attr_available = True
             if self._unavailable_logged:
                 self._unavailable_logged = False
-                LOGGER.info("Entity %s (%d) back online", self.entity_id, self.obj.vid)
+                LOGGER.info("Entity %s back online", self.entity_id)
 
     def _on_object_updated(self, event: ObjectUpdated[T]) -> None:
         if event.obj != self.obj:
