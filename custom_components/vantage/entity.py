@@ -21,7 +21,7 @@ from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER
 from .device import vantage_device_info
 
 
@@ -69,6 +69,8 @@ class VantageEntity[T: SystemObject](Entity):
     _attr_has_entity_name = True
     _attr_translation_key = "vantage"
 
+    _unavailable_logged: bool = False
+
     parent_obj: SystemObject | None = None
 
     def __init__(self, entry: VantageConfigEntry, controller: Controller[T], obj: T):
@@ -109,10 +111,7 @@ class VantageEntity[T: SystemObject](Entity):
             return await coro
         except ClientError as err:
             if isinstance(err, LoginFailedError | LoginRequiredError):
-                # If authentication fails, prompt the user to reconfigure the
-                # integration. This can happen when authentication is enabled on the
-                # controller after the integration is configured, when the user changes
-                # the password, or when a firmware update resets the password.
+                # If authentication fails, prompt the user to reconfigure.
                 self.entry.async_start_reauth(self.hass)
             elif isinstance(err, InvalidObjectError):
                 # If the object ID of a request is invalid, mark the entity as
@@ -135,8 +134,21 @@ class VantageEntity[T: SystemObject](Entity):
         )
 
     async def async_update(self) -> None:
-        """Update the entity state (only used for polling entities)."""
-        await self.async_request_call(self.obj.fetch_state())
+        """Manually update the entity state, for polling entities."""
+        try:
+            await self.obj.fetch_state()
+        except ClientError as err:
+            self._attr_available = False
+            if not self._unavailable_logged:
+                self._unavailable_logged = True
+                LOGGER.info(
+                    "Entity %s (%d) unavailable: %s", self.entity_id, self.obj.vid, err
+                )
+        else:
+            self._attr_available = True
+            if self._unavailable_logged:
+                self._unavailable_logged = False
+                LOGGER.info("Entity %s (%d) back online", self.entity_id, self.obj.vid)
 
     def _on_object_updated(self, event: ObjectUpdated[T]) -> None:
         if event.obj != self.obj:
