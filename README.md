@@ -75,6 +75,8 @@ Vantage *Load* and *Load Group* objects will appear as lights in Home Assistant,
 
 Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will appear as lights in Home Assistant.
 
+By default, lights turn on instantly to 100% brightness without ramping. If you'd like to change this behavior, you can use Home Assistant's [light profiles](https://www.home-assistant.io/integrations/light/#default-turn-on-values) feature.
+
 ### Switches
 
 Vantage *Load* objects labeled as *Relay* or *Motor* will appear as switches in Home Assistant. If you have a relay or motor load that you'd like to show up as a different type of entity, you can use the [change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
