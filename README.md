@@ -11,7 +11,7 @@ Home Assistant integration for Vantage InFusion home automation controllers, usi
 The features of this integration include:
 
 - Control Vantage devices (lights, shades, motion sensors, etc) as [Home Assistant entities](#platforms).
-- Trigger automations based on Vantage keypad button presses, using [events](#events).
+- Trigger automations based on Vantage keypad button presses, using [blueprints](#blueprints) or [events](#events).
 - Start Vantage tasks from Home Assistant, using [services](#services).
 - Automatic Vantage controller discovery (via mDNS).
 - UI-based configuration (config flow).
@@ -102,6 +102,16 @@ Certain Vantage dimmer modules have built-in power, current, and temperature sen
 Vantage *GMem* objects (variables) will be created as entities in Home Assistant, but are hidden by default.
 
 Variables with numeric types will be created as number entities, variables with a type of *Boolean* will be created as binary sensor entities, and variables with a type of *Text* will be created as text entities.
+
+## Blueprints
+
+Automation blueprints are pre-made automations that you can easily add to your Home Assistant instance. See the [Home Assistant documentation](https://www.home-assistant.io/docs/automation/using_blueprints/) for more information on how to use blueprints.
+
+This integration provides some pre-made blueprints that are helpful for working with Vantage systems.
+
+### Trigger Actions on Vantage Button Press
+
+See [blueprints/vantage_button_press.yaml](blueprints/vantage_button_press.yaml) for a blueprint that allows you to trigger actions in Home Assistant when a button is pressed or held on a Vantage keypad.
 
 ## Events
 
