@@ -75,19 +75,23 @@ Vantage *Load* and *Load Group* objects will appear as lights in Home Assistant,
 
 Additionally, color loads connected to a Vantage DMX or DMX/DALI Gateway will appear as lights in Home Assistant.
 
-By default, lights turn on instantly to 100% brightness without ramping. If you'd like to change this behavior, you can use Home Assistant's [light profiles](https://www.home-assistant.io/integrations/light/#default-turn-on-values) feature.
+> [!TIP]
+> By default, lights turn on instantly to 100% brightness without ramping. If you'd like to change this behavior, you can use Home Assistant's [light profiles](https://www.home-assistant.io/integrations/light/#default-turn-on-values) feature.
 
 ### Switches
 
-Vantage *Load* objects labeled as *Relay* or *Motor* will appear as switches in Home Assistant. If you have a relay or motor load that you'd like to show up as a different type of entity, you can use the [change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
+Vantage *Load* objects labeled as *Relay* or *Motor* will appear as switches in Home Assistant.
+
+> [!TIP]
+> If you have a relay or motor load that you'd like to show up as a different type of entity, you can use the [change device type of a switch](https://www.home-assistant.io/integrations/switch_as_x/) integration.
 
 ### Climate
 
-Vantage *Thermostat* objects will appear as climate devices in Home Assistant.
+Vantage *Thermostat*, *VirtualThermostat*, *Generic HVAC RS485*, and *HVAC-IU* objects will appear as climate devices in Home Assistant.
 
 ### Covers
 
-Supported Vantage *Blind* and *BlindGroup* objects will appear as covers in Home Assistant. Currently the following blind types are supported *QISBlind*, *QubeBlind*, *RelayBlind*, *Somfy.RS-485*, and *Somfy.URTSI_2*.
+Vantage *Blind*, *BlindGroup*, *QISBlind*, *QubeBlind*, *RelayBlind*, *Somfy.RS-485*, and *Somfy.URTSI_2* objects will appear as covers in Home Assistant.
 
 ### Binary Sensors
 
