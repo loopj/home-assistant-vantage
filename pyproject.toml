@@ -13,7 +13,7 @@ classifiers = ["Private :: Do Not Upload"]
 dependencies = [
     "aiovantage==0.22.5",
     "homeassistant==2025.2.0",
-    "colorlog==6.9.0",
+    "colorlog==6.10.1",
 ]
 
 [project.optional-dependencies]
