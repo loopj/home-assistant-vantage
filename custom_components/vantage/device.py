@@ -1,9 +1,11 @@
 """Support for Vantage devices."""
 
+import contextlib
 from typing import Protocol, runtime_checkable
 
 from aiovantage import Vantage
 from aiovantage.controllers import Controller
+from aiovantage.errors import CommandError
 from aiovantage.events import ObjectAdded, ObjectDeleted, ObjectUpdated
 from aiovantage.objects import (
     LocationObject,
@@ -32,7 +34,8 @@ async def add_devices_from_controller[T: SystemObject](
     async def add_or_update_device(obj: T) -> None:
         device_info = vantage_device_info(vantage, obj)
         if isinstance(obj, Master):
-            device_info["sw_version"] = await obj.get_application_version()
+            with contextlib.suppress(CommandError):
+                device_info["sw_version"] = await obj.get_application_version()
 
         dev_reg.async_get_or_create(config_entry_id=entry.entry_id, **device_info)
 
