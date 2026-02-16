@@ -37,4 +37,4 @@ jobs:
           args: format --check
 
       - name: Run pyright
-        uses: jakebailey/pyright-action@v2
+        uses: jakebailey/pyright-action@v3
