@@ -28,7 +28,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, add_entities_from_controller
-from .naming import get_area_lineage
+from .naming import hierarchical_button_name
 
 FOOT_CANDLES_TO_LUX = 10.7639
 
@@ -229,27 +229,7 @@ class VantageButtonSensorEntity(VantageEntity[Button], SensorEntity, RestoreEnti
     @override
     def name(self) -> str:
         """Return the hierarchical name for the button sensor."""
-        # Build: "Area1-Area2-StationName-ButtonText"
-        station = self.client.stations.get(self.obj.parent.vid)
-        if station is None:
-            return self.obj.name
-
-        # Get area lineage from the station's area
-        lineage = get_area_lineage(self.client, station.area)
-        parts = [
-            p
-            for p in reversed(lineage[:-1])
-            if not p.startswith("Station Load ")
-            and not p.startswith("Color Load ")
-        ]
-        # Add the station name to the path
-        station_name = station.d_name or station.name
-        parts.append(station_name)
-        prefix = "-".join(parts) + "-" if parts else ""
-
-        # Use button text if available, otherwise fall back to the object name
-        btn_name = self.obj.text1 or self.obj.name
-        return prefix + btn_name
+        return hierarchical_button_name(self.client, self.obj)
 
     @property
     @override

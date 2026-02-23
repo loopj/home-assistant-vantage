@@ -34,6 +34,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Vantage light entities from a config entry."""
+    from .button_led import async_setup_entry as async_setup_button_leds
+
     vantage = entry.runtime_data.client
 
     # Add every "light" load as a light entity
@@ -54,6 +56,9 @@ async def async_setup_entry(
     add_entities_from_controller(
         entry, async_add_entities, VantageRGBLoadLightEntity, vantage.rgb_loads
     )
+
+    # Add button LED entities (EntityCategory.CONFIG keeps them out of area control)
+    await async_setup_button_leds(hass, entry, async_add_entities)
 
 
 class VantageLoadLightEntity(VantageEntity[Load], LightEntity):

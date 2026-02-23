@@ -19,7 +19,7 @@ from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homeassistant.util.ssl import get_default_no_verify_context
 
 from .config_entry import VantageConfigEntry
-from .const import DOMAIN
+from .const import CONF_BLUE_BUTTON_LED, DOMAIN
 
 USER_SCHEMA = vol.Schema(
     {
@@ -37,10 +37,42 @@ AUTH_SCHEMA = vol.Schema(
 DEFAULT_VANTAGE_USERNAME = "administrator"
 
 
+class OptionsFlow(config_entries.OptionsFlow):
+    """Options flow for Vantage InFusion integration."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the integration options."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_BLUE_BUTTON_LED,
+                        default=self.config_entry.options.get(
+                            CONF_BLUE_BUTTON_LED, False
+                        ),
+                    ): bool,
+                }
+            ),
+        )
+
+
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Vantage InFusion integration."""
 
     VERSION = 1
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: VantageConfigEntry,
+    ) -> OptionsFlow:
+        """Return the options flow handler."""
+        return OptionsFlow()
 
     controller: VantageControllerDetails | None = None
     username: str | None = None

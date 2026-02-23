@@ -21,3 +21,6 @@ EVENT_TASK_STATE_CHANGED = f"{DOMAIN}_task_state_changed"
 
 # Climate constants
 FAN_MAX = "max"
+
+# Button LED option: set True when keypads support the blue channel
+CONF_BLUE_BUTTON_LED = "blue_button_led"

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from aiovantage import Vantage
-    from aiovantage.objects import LocationObject
+    from aiovantage.objects import Button, LocationObject
 
 
 def get_area_lineage(client: "Vantage", area_vid: int | None) -> list[str]:
@@ -56,3 +56,27 @@ def hierarchical_load_name(client: "Vantage", obj: "LocationObject") -> str:
     prefix = "-".join(parts) + "-" if parts else ""
     load_name = getattr(obj, "d_name", None) or obj.name
     return prefix + load_name
+
+
+def hierarchical_button_name(client: "Vantage", obj: "Button") -> str:
+    """Build a hierarchical name for a button entity.
+
+    Format: "Area1-Area2-StationName-ButtonText"
+    Falls back to the object name when no parent station is found.
+    """
+    station = client.stations.get(obj.parent.vid)
+    if station is None:
+        return obj.name
+
+    lineage = get_area_lineage(client, station.area)
+    parts = [
+        p
+        for p in reversed(lineage[:-1])
+        if not p.startswith("Station Load ")
+        and not p.startswith("Color Load ")
+    ]
+    station_name = station.d_name or station.name
+    parts.append(station_name)
+    prefix = "-".join(parts) + "-" if parts else ""
+    btn_name = obj.text1 or obj.name
+    return prefix + btn_name
