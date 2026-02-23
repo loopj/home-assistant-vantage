@@ -56,8 +56,14 @@ def async_cleanup_entities(hass: HomeAssistant, entry: VantageConfigEntry) -> No
     vantage = entry.runtime_data.client
     ent_reg = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
-        # Entity IDs always start with the object ID, followed by an optional suffix
-        vantage_id = int(entity.unique_id.split(":")[0])
+        # Unique IDs have the form "vantagevid-{vid}" or "vantagevid-{vid}:{suffix}"
+        uid_base = entity.unique_id.split(":")[0]
+        if uid_base.startswith("vantagevid-"):
+            uid_base = uid_base[len("vantagevid-"):]
+        try:
+            vantage_id = int(uid_base)
+        except ValueError:
+            continue
         if vantage_id not in vantage:
             ent_reg.async_remove(entity.entity_id)
 
@@ -87,7 +93,7 @@ class VantageEntity[T: SystemObject](Entity):
     @property
     @override
     def unique_id(self) -> str:
-        return str(self.obj.vid)
+        return f"vantagevid-{self.obj.vid}"
 
     @property
     @override

@@ -1,6 +1,7 @@
 """The Vantage InFusion Controller integration."""
 
 import asyncio
+from pathlib import Path
 
 from aiovantage import Vantage
 from aiovantage.errors import (
@@ -33,6 +34,7 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.CLIMATE,
     Platform.COVER,
+    Platform.FAN,
     Platform.LIGHT,
     Platform.NUMBER,
     Platform.SENSOR,
@@ -46,13 +48,26 @@ SYSTEM_PROGRAMMING_DELAY = 30
 
 async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
+    host = entry.data[CONF_HOST]
+
+    # Look for a local Design Center backup XML in the HA config directory.
+    # If present, object discovery reads from the file instead of the live
+    # controller — preserving any loads deleted from Design Center (phantom
+    # loads) while keeping the command port connection for real-time updates.
+    # File naming convention matches pyvantage: {host}_config.txt
+    local_config_file: Path | None = None
+    candidate = Path(hass.config.config_dir) / f"{host}_config.txt"
+    if candidate.is_file():
+        local_config_file = candidate
+
     # Create a Vantage client
     vantage = Vantage(
-        entry.data[CONF_HOST],
+        host,
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
         ssl=entry.data.get(CONF_SSL, True),
         ssl_context_factory=get_default_no_verify_context,
+        local_config_file=local_config_file,
     )
 
     # Store the client in the config entry's runtime data

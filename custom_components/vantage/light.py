@@ -22,6 +22,7 @@ from homeassistant.util.color import brightness_to_value, value_to_brightness
 
 from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, add_entities_from_controller
+from .naming import hierarchical_load_name
 
 # Vantage level range for converting between HA brightness and Vantage levels
 LEVEL_RANGE = (1, 100)
@@ -57,6 +58,12 @@ async def async_setup_entry(
 
 class VantageLoadLightEntity(VantageEntity[Load], LightEntity):
     """Vantage load light entity."""
+
+    _attr_has_entity_name = False
+
+    @property
+    def name(self) -> str:
+        return hierarchical_load_name(self.client, self.obj)
 
     @property
     def is_dimmable(self) -> bool:

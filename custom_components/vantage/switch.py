@@ -10,6 +10,7 @@ from aiovantage.objects import Load
 
 from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, VantageGMemEntity, add_entities_from_controller
+from .naming import hierarchical_load_name
 
 
 async def async_setup_entry(
@@ -20,13 +21,13 @@ async def async_setup_entry(
     """Set up Vantage switch entities from a config entry."""
     vantage = entry.runtime_data.client
 
-    # Add every "relay" or "motor" load as a switch entity
+    # Add every "relay" load as a switch entity (motor loads are handled by fan.py)
     add_entities_from_controller(
         entry,
         async_add_entities,
         VantageLoadSwitchEntity,
         vantage.loads,
-        lambda obj: obj.is_relay or obj.is_motor,
+        lambda obj: obj.is_relay,
     )
 
     # Add every GMem object with a boolean data type as a switch entity
@@ -41,6 +42,13 @@ async def async_setup_entry(
 
 class VantageLoadSwitchEntity(VantageEntity[Load], SwitchEntity):
     """Switch entity provided by a Vantage Load object."""
+
+    _attr_has_entity_name = False
+
+    @property
+    @override
+    def name(self) -> str:
+        return hierarchical_load_name(self.client, self.obj)
 
     @property
     @override
