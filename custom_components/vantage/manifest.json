@@ -2,24 +2,24 @@
   "domain": "vantage",
   "name": "Vantage InFusion",
   "codeowners": [
-    "@loopj"
+    "@ben-j-h"
   ],
   "config_flow": true,
   "dependencies": [
     "zeroconf"
   ],
-  "documentation": "https://github.com/loopj/home-assistant-vantage",
+  "documentation": "https://github.com/ben-j-h/home-assistant-vantage",
   "integration_type": "hub",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/loopj/home-assistant-vantage/issues",
+  "issue_tracker": "https://github.com/ben-j-h/home-assistant-vantage/issues",
   "loggers": [
     "aiovantage",
     "custom_components.vantage"
   ],
   "requirements": [
-    "aiovantage==0.22.6"
+    "aiovantage @ git+https://github.com/ben-j-h/aiovantage@main"
   ],
-  "version": "0.14.5",
+  "version": "0.14.6",
   "zeroconf": [
     {
       "type": "_secure_aci._tcp.local.",
