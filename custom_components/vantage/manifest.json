@@ -19,7 +19,7 @@
   "requirements": [
     "aiovantage @ git+https://github.com/ben-j-h/aiovantage@main"
   ],
-  "version": "0.14.6",
+  "version": "0.14.7",
   "zeroconf": [
     {
       "type": "_secure_aci._tcp.local.",
