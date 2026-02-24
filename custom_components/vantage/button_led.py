@@ -4,7 +4,7 @@ from typing import Any, override
 
 from aiovantage.controllers import Controller
 from aiovantage.object_interfaces import ButtonInterface
-from aiovantage.objects import Button
+from aiovantage.objects import Button, Dimmer, DualRelayStation, ScenePointRelay
 
 from homeassistant.components.light import (
     ATTR_EFFECT,
@@ -98,7 +98,14 @@ class VantageButtonLEDEntity(VantageEntity[Button], LightEntity):
 
     @property
     def _blue_enabled(self) -> bool:
-        """Return True if the keypad hardware supports the blue LED channel."""
+        """Return True if the button LED hardware supports the blue channel.
+
+        Standalone load-control hardware (ScenePointRelay, Dimmer,
+        DualRelayStation) has full RGB LEDs.  Standard multi-button Keypad
+        hardware is RG-only and relies on the integration option.
+        """
+        if isinstance(self.parent_obj, (ScenePointRelay, Dimmer, DualRelayStation)):
+            return True
         return self.entry.options.get(CONF_BLUE_BUTTON_LED, False)
 
     @property

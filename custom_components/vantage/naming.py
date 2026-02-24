@@ -62,11 +62,31 @@ def hierarchical_button_name(client: "Vantage", obj: "Button") -> str:
     """Build a hierarchical name for a button entity.
 
     Format: "Area1-Area2-StationName-ButtonText"
-    Falls back to the object name when no parent station is found.
+
+    When the parent station is not found in ``client.stations`` (e.g. the
+    button belongs to a non-standard station type), falls back to a
+    hierarchical area name derived from the parent object's area field, if
+    one is available.  As a last resort returns the button's own name.
     """
     station = client.stations.get(obj.parent.vid)
+
     if station is None:
-        return obj.name
+        # Try to find the parent object and derive area-based naming from it
+        parent = client.get(obj.parent.vid)
+        area_vid = getattr(parent, "area", None) if parent else None
+        if area_vid:
+            lineage = get_area_lineage(client, area_vid)
+            parts = [
+                p
+                for p in reversed(lineage[:-1])
+                if not p.startswith("Station Load ")
+                and not p.startswith("Color Load ")
+            ]
+            prefix = "-".join(parts) + "-" if parts else ""
+        else:
+            prefix = ""
+        btn_name = obj.text1.strip() or obj.name.strip()
+        return (prefix + btn_name) if btn_name else prefix.rstrip("-")
 
     lineage = get_area_lineage(client, station.area)
     parts = [
@@ -75,8 +95,8 @@ def hierarchical_button_name(client: "Vantage", obj: "Button") -> str:
         if not p.startswith("Station Load ")
         and not p.startswith("Color Load ")
     ]
-    station_name = station.d_name or station.name
+    station_name = (station.d_name or station.name).strip()
     parts.append(station_name)
     prefix = "-".join(parts) + "-" if parts else ""
-    btn_name = obj.text1 or obj.name
-    return prefix + btn_name
+    btn_name = obj.text1.strip() or obj.name.strip()
+    return (prefix + btn_name) if btn_name else prefix.rstrip("-")

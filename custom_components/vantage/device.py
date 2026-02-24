@@ -96,9 +96,11 @@ class ChildObject(Protocol):
 
 def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
     """Build the device info for a Vantage object."""
+    # Strip whitespace; fall back to "Type VID" so HA never shows "Unnamed device"
+    name = (obj.d_name or obj.name).strip() or f"{obj.vantage_type()} {obj.vid}"
     device_info = DeviceInfo(
         identifiers={(DOMAIN, str(obj.vid))},
-        name=obj.d_name or obj.name,
+        name=name,
     )
 
     # Suggest sensible model and manufacturer names
