@@ -1,7 +1,9 @@
-"""Handle forwarding Vantage events to the  Home Assistant event bus."""
+"""Handle forwarding Vantage events to the Home Assistant event bus."""
 
-from aiovantage.events import ObjectUpdated
-from aiovantage.objects import Button, Task
+from typing import Any
+
+from aiovantage.events import ObjectUpdated, StatusReceived
+from aiovantage.objects import Task
 
 from homeassistant.core import HomeAssistant
 
@@ -19,25 +21,31 @@ def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
     """Set up Vantage events from a config entry."""
     vantage = entry.runtime_data.client
 
-    def on_button_updated(event: ObjectUpdated[Button]) -> None:
-        """Handle button press/release events."""
-        if "state" not in event.attrs_changed:
-            return
+    def on_button_status(event: StatusReceived) -> None:
+        """Forward S:BTN status messages to the HA event bus.
 
-        payload = {
-            "button_id": event.obj.vid,
-            "button_name": event.obj.name,
-            "button_position": event.obj.parent.position,
-            "button_text1": event.obj.text1,
-            "button_text2": event.obj.text2,
-        }
+        aiovantage emits button presses as ``StatusReceived(category="BTN", ...)``
+        from the event stream, not as ``ObjectUpdated`` on the buttons controller,
+        so we subscribe to the raw status stream here.
+        """
+        is_press = bool(event.args) and event.args[0].upper() == "PRESS"
 
-        if station := vantage.stations.get(event.obj.parent.vid):
-            payload["station_id"] = station.vid
-            payload["station_name"] = station.name
+        button = vantage.buttons.get(event.vid)
+        payload: dict[str, Any] = {"button_id": event.vid}
+        if button is not None:
+            payload["button_name"] = button.name
+            payload["button_text1"] = getattr(button, "text1", None)
+            payload["button_text2"] = getattr(button, "text2", None)
+            parent = getattr(button, "parent", None)
+            if parent is not None:
+                payload["button_position"] = getattr(parent, "position", None)
+                station = vantage.stations.get(parent.vid)
+                if station is not None:
+                    payload["station_id"] = station.vid
+                    payload["station_name"] = station.name
 
         hass.bus.async_fire(
-            EVENT_BUTTON_PRESSED if event.obj.is_down else EVENT_BUTTON_RELEASED,
+            EVENT_BUTTON_PRESSED if is_press else EVENT_BUTTON_RELEASED,
             payload,
         )
 
@@ -65,6 +73,9 @@ def async_setup_events(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
 
             hass.bus.async_fire(EVENT_TASK_STATE_CHANGED, payload)
 
-    # Subscribe to button and task events
-    entry.async_on_unload(vantage.buttons.subscribe(ObjectUpdated, on_button_updated))
+    # Button presses arrive as S:BTN status messages on the event stream.
+    entry.async_on_unload(
+        vantage.event_stream.subscribe_status(on_button_status, "BTN")
+    )
+    # Task events still come through the controller dispatcher.
     entry.async_on_unload(vantage.tasks.subscribe(ObjectUpdated, on_task_updated))
