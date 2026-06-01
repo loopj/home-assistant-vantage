@@ -83,11 +83,6 @@ class VantageControllerConnectivityEntity(VantageEntity[Master], BinarySensorEnt
     def unique_id(self) -> str:
         return f"{self.obj.vid}:connectivity"
 
-    @property
-    @override
-    def is_on(self) -> bool | None:
-        return self._attr_is_on
-
     @override
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
