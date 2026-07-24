@@ -43,6 +43,30 @@ PLATFORMS: list[Platform] = [
 # How long to wait after receiving a system programming event before refreshing
 SYSTEM_PROGRAMMING_DELAY = 30
 
+# Retry initial connection/login a few times before giving up. Right after a
+# reboot the controller can transiently refuse or defer authentication (a stale
+# session held from before the reboot, or the login handshake racing the first
+# command), which otherwise surfaces as a spurious "authentication expired"
+# repair on every boot.
+INIT_MAX_ATTEMPTS = 4
+INIT_RETRY_DELAY = 5
+
+
+async def _async_initialize_with_retry(vantage: Vantage) -> None:
+    """Initialize the Vantage client, retrying transient startup errors.
+
+    Re-raises the last error once attempts are exhausted so the caller can map
+    it to the appropriate config entry outcome.
+    """
+    for attempt in range(INIT_MAX_ATTEMPTS):
+        try:
+            await vantage.initialize()
+            return
+        except (LoginFailedError, LoginRequiredError, ClientConnectionError):
+            if attempt + 1 >= INIT_MAX_ATTEMPTS:
+                raise
+            await asyncio.sleep(INIT_RETRY_DELAY)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> bool:
     """Set up Vantage integration from a config entry."""
@@ -59,8 +83,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
     entry.runtime_data = VantageData(client=vantage)
 
     try:
-        # Initialize and fetch all objects
-        await vantage.initialize()
+        # Initialize and fetch all objects, retrying transient startup errors
+        await _async_initialize_with_retry(vantage)
 
         # Add Vantage devices (controllers, modules, stations) to the device registry
         await async_setup_devices(hass, entry)
@@ -101,10 +125,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
             vantage.masters.subscribe(ObjectUpdated, on_master_updated)
         )
 
-    except (LoginFailedError, LoginRequiredError) as err:
-        # Handle expired or invalid credentials. This will prompt the user to
-        # reconfigure the integration.
+    except LoginFailedError as err:
+        # Credentials were persistently rejected by the controller. Prompt the
+        # user to reconfigure the integration.
         raise ConfigEntryAuthFailed from err
+
+    except LoginRequiredError as err:
+        # The controller still reports that login is required after retries. With
+        # valid stored credentials this is a transient session/handshake problem
+        # (common right after a reboot) rather than bad credentials, so let Home
+        # Assistant retry setup later instead of raising a spurious reauth repair.
+        raise ConfigEntryNotReady from err
 
     except ClientConnectionError as err:
         # Handle connection errors. Home Assistant will automatically take care of
