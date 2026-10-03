@@ -17,6 +17,7 @@ from aiovantage.objects import GMem, SystemObject
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -105,6 +106,11 @@ class VantageEntity[T: SystemObject](Entity):
 
         return vantage_device_info(self.client, self.obj)
 
+    @property
+    @override
+    def available(self) -> bool:
+        return self.entry.runtime_data.connected and self._attr_available
+
     async def async_request_call[U](self, coro: Awaitable[U]) -> U:
         """Send a request to the Vantage controller."""
         try:
@@ -125,6 +131,14 @@ class VantageEntity[T: SystemObject](Entity):
 
     @override
     async def async_added_to_hass(self) -> None:
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                self.entry.runtime_data.signal_connection_changed,
+                self.async_write_ha_state,
+            )
+        )
+
         self.async_on_remove(
             self.controller.subscribe(ObjectUpdated, self._on_object_updated)
         )

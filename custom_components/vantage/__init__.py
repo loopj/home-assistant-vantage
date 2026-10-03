@@ -8,7 +8,7 @@ from aiovantage.errors import (
     LoginFailedError,
     LoginRequiredError,
 )
-from aiovantage.events import ObjectUpdated
+from aiovantage.events import Connected, Disconnected, ObjectUpdated, Reconnected
 from aiovantage.objects import Master
 
 from homeassistant.config_entries import ConfigEntryAuthFailed, ConfigEntryNotReady
@@ -20,6 +20,7 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.util.ssl import get_default_no_verify_context
 
 from .config_entry import VantageConfigEntry, VantageData
@@ -56,7 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
     )
 
     # Store the client in the config entry's runtime data
-    entry.runtime_data = VantageData(client=vantage)
+    entry.runtime_data = VantageData(client=vantage, entry_id=entry.entry_id)
 
     try:
         # Initialize and fetch all objects
@@ -100,6 +101,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
         entry.async_on_unload(
             vantage.masters.subscribe(ObjectUpdated, on_master_updated)
         )
+
+        # Mark every entity unavailable while the controller connection is down
+        def on_connection_changed(
+            event: Connected | Reconnected | Disconnected,
+        ) -> None:
+            entry.runtime_data.connected = not isinstance(event, Disconnected)
+            async_dispatcher_send(hass, entry.runtime_data.signal_connection_changed)
+
+        for event_type in (Connected, Reconnected, Disconnected):
+            entry.async_on_unload(
+                vantage.event_stream.subscribe(event_type, on_connection_changed)
+            )
 
     except (LoginFailedError, LoginRequiredError) as err:
         # Handle expired or invalid credentials. This will prompt the user to
