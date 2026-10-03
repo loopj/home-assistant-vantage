@@ -86,6 +86,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(serial_number)
         self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.host})
 
+        # Abort if a system is already configured, since every master in a system
+        # is discovered separately but the system is set up through only one of them
+        if self._async_current_entries(include_ignore=False):
+            return self.async_abort(reason="already_configured")
+
         # Get information about the controller, abort if it cannot be reached
         self.controller = await get_controller_details(
             discovery_info.host, ssl_context_factory=get_default_no_verify_context
