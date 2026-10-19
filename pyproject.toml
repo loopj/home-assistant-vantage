@@ -17,10 +17,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pyright==1.1.414", "ruff==0.17.0", "bumpver==2026.1132"]
+dev = [
+    "pyright==1.1.414",
+    "ruff==0.17.0",
+    "bumpver==2026.1132",
+    "pytest-homeassistant-custom-component==0.13.373",
+]
 
 [tool.hatch.build.targets.wheel]
 include = ["custom_components/vantage"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.ruff]
 # Stay compatible with the python 3.13 that older Home Assistant releases run on
@@ -75,6 +84,7 @@ known-first-party = ["homeassistant"]
 combine-as-imports = true
 
 [tool.pyright]
+include = ["custom_components"]
 typeCheckingMode = "strict"
 reportPrivateImportUsage = "none"
 reportIncompatibleVariableOverride = "none"

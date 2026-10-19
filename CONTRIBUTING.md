@@ -6,14 +6,15 @@ First off, thanks for taking the time to contribute!
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [🔨 Set up Development Environment](#-set-up-development-environment)
-- [✨ Submit your work](#-submit-your-work)
-- [🎨 Style guidelines](#-style-guidelines)
-- [🚀 Publish a release](#-publish-a-release)
+- [Set up Development Environment](#set-up-development-environment)
+- [Submit your work](#submit-your-work)
+- [Run tests](#run-tests)
+- [Style guidelines](#style-guidelines)
+- [Publish a release](#publish-a-release)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## 🔨 Set up Development Environment
+## Set up Development Environment
 
 ### Using `uv`
 
@@ -56,13 +57,22 @@ To start the Home Assistant development server, run:
 ./scripts/develop
 ```
 
-## ✨ Submit your work
+## Submit your work
 
 Submit your improvements, fixes, and new features to one at a time, using GitHub [Pull Requests](https://docs.github.com/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
 
 Good pull requests remain focused in scope and avoid containing unrelated commits. If your contribution involves a significant amount of work or substantial changes to any part of the project, please open an issue to discuss it first to avoid any wasted or duplicate effort.
 
-## 🎨 Style guidelines
+## Run tests
+
+The tests use [pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component), which provides the same fixtures as the Home Assistant core tests. Pull requests run them in CI.
+
+```bash
+# Run the tests with a coverage report
+uv run pytest --cov=custom_components.vantage --cov-report=term-missing
+```
+
+## Style guidelines
 
 Before submitting a pull request, make sure your code follows the style guidelines. This project uses [pyright](https://microsoft.github.io/pyright/) for type checking, and [ruff](https://docs.astral.sh/ruff/) for linting and formatting.
 
@@ -89,7 +99,7 @@ uv run ruff check
 uv run ruff format
 ```
 
-## 🚀 Publish a release
+## Publish a release
 
 First, update the version number:
 
