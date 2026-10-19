@@ -204,3 +204,12 @@ You can start a Vantage task by calling the `vantage.start_task` service, with e
 ### `vantage.stop_task`
 
 You can stop a Vantage task by calling the `vantage.stop_task` service, with either the Vantage ID of the task, or the task's name.
+
+## Removing the integration
+
+This integration follows standard integration removal. No extra steps are needed on the Vantage controller.
+
+- Go to [**Settings > Devices & Services**](https://my.home-assistant.io/redirect/integrations) and select **Vantage InFusion**.
+- Next to the controller entry, select the three dots menu, then select **Delete**.
+
+To remove the integration files as well, remove Vantage from HACS. If you installed it manually, delete the `config/custom_components/vantage` directory. Then restart Home Assistant.
