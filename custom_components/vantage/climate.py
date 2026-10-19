@@ -265,8 +265,14 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
     @override
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         # Home Assistant has already checked the mode against fan_modes
-        vantage_fan_mode = HA_FAN_MODE_TO_VANTAGE_FAN_MODE[fan_mode]
-        await self.async_request_call(self.obj.set_fan_mode(vantage_fan_mode))
+        if isinstance(self.obj, FanInterface):
+            # Thermostats with a fan interface offer fan speeds
+            fan_speed = HA_FAN_MODE_TO_VANTAGE_FAN_SPEED[fan_mode]
+            await self.async_request_call(self.obj.set_speed(fan_speed))
+        else:
+            # Other thermostats offer auto and on
+            vantage_fan_mode = HA_FAN_MODE_TO_VANTAGE_FAN_MODE[fan_mode]
+            await self.async_request_call(self.obj.set_fan_mode(vantage_fan_mode))
 
     @override
     async def async_set_temperature(self, **kwargs: Any) -> None:
