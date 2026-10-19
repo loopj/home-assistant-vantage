@@ -22,6 +22,10 @@ dev = ["pyright==1.1.414", "ruff==0.17.0", "bumpver==2026.1132"]
 [tool.hatch.build.targets.wheel]
 include = ["custom_components/vantage"]
 
+[tool.ruff]
+# Stay compatible with the python 3.13 that older Home Assistant releases run on
+target-version = "py313"
+
 [tool.ruff.lint]
 select = [
     "B007",    # Loop control variable {name} not used within loop body
