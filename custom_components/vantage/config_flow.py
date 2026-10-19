@@ -1,6 +1,6 @@
 """Config flow for Vantage InFusion Controller integration."""
 
-from typing import Any, override
+from typing import TYPE_CHECKING, Any, override
 
 from aiovantage.discovery import (
     VantageControllerDetails,
@@ -10,7 +10,13 @@ from aiovantage.discovery import (
     validate_credentials,
 )
 from aiovantage.errors import ClientConnectionError
-import voluptuous as vol
+
+# Type check against probatio, which Home Assistant 2026.9.0 and later load as voluptuous
+# TODO: Import probatio directly once hacs.json requires Home Assistant 2026.9.0
+if TYPE_CHECKING:
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
