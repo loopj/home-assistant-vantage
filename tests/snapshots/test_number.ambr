@@ -1,0 +1,119 @@
+# serializer version: 1
+# name: test_entities[number][number.variables_scene_number-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <NumberEntityCapabilityAttribute.MAX: 'max'>: 2147483647,
+      <NumberEntityCapabilityAttribute.MIN: 'min'>: -2147483648,
+      <NumberEntityCapabilityAttribute.MODE: 'mode'>: <NumberMode.AUTO: 'auto'>,
+      <NumberEntityCapabilityAttribute.STEP: 'step'>: 1.0,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'number',
+    'entity_category': None,
+    'entity_id': 'number.variables_scene_number',
+    'has_entity_name': True,
+    'hidden_by': <RegistryEntryHider.INTEGRATION: 'integration'>,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Scene Number',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Scene Number',
+    'platform': 'vantage',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'vantage',
+    'unique_id': '51',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[number][number.variables_scene_number-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Variables Scene Number',
+      <NumberEntityCapabilityAttribute.MAX: 'max'>: 2147483647,
+      <NumberEntityCapabilityAttribute.MIN: 'min'>: -2147483648,
+      <NumberEntityCapabilityAttribute.MODE: 'mode'>: <NumberMode.AUTO: 'auto'>,
+      <NumberEntityCapabilityAttribute.STEP: 'step'>: 1.0,
+    }),
+    'context': <ANY>,
+    'entity_id': 'number.variables_scene_number',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': '3',
+  })
+# ---
+# name: test_entities[number][number.variables_setpoint_offset-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <NumberEntityCapabilityAttribute.MAX: 'max'>: 2147483647,
+      <NumberEntityCapabilityAttribute.MIN: 'min'>: -2147483648,
+      <NumberEntityCapabilityAttribute.MODE: 'mode'>: <NumberMode.AUTO: 'auto'>,
+      <NumberEntityCapabilityAttribute.STEP: 'step'>: 0.001,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'number',
+    'entity_category': None,
+    'entity_id': 'number.variables_setpoint_offset',
+    'has_entity_name': True,
+    'hidden_by': <RegistryEntryHider.INTEGRATION: 'integration'>,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Setpoint Offset',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Setpoint Offset',
+    'platform': 'vantage',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'vantage',
+    'unique_id': '53',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[number][number.variables_setpoint_offset-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Variables Setpoint Offset',
+      <NumberEntityCapabilityAttribute.MAX: 'max'>: 2147483647,
+      <NumberEntityCapabilityAttribute.MIN: 'min'>: -2147483648,
+      <NumberEntityCapabilityAttribute.MODE: 'mode'>: <NumberMode.AUTO: 'auto'>,
+      <NumberEntityCapabilityAttribute.STEP: 'step'>: 0.001,
+    }),
+    'context': <ANY>,
+    'entity_id': 'number.variables_setpoint_offset',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': '1.5',
+  })
+# ---
