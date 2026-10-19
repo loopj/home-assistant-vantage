@@ -23,10 +23,11 @@ from homeassistant.components.climate import (
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
-from .const import LOGGER, FAN_MAX
+from .const import FAN_MAX
 from .entity import VantageEntity, add_entities_from_controller
 
 # Let aiovantage queue requests to the controller
@@ -257,20 +258,14 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
 
     @override
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        vantage_hvac_mode = HA_HVAC_MODE_TO_VANTAGE_OPERATION_MODE.get(hvac_mode)
-        if vantage_hvac_mode is None:
-            LOGGER.error("Invalid mode for async_set_hvac_mode: %s", hvac_mode)
-            return
-
+        # Home Assistant has already checked the mode against hvac_modes
+        vantage_hvac_mode = HA_HVAC_MODE_TO_VANTAGE_OPERATION_MODE[hvac_mode]
         await self.async_request_call(self.obj.set_operation_mode(vantage_hvac_mode))
 
     @override
     async def async_set_fan_mode(self, fan_mode: str) -> None:
-        vantage_fan_mode = HA_FAN_MODE_TO_VANTAGE_FAN_MODE.get(fan_mode)
-        if vantage_fan_mode is None:
-            LOGGER.error("Invalid mode for async_set_fan_mode: %s", fan_mode)
-            return
-
+        # Home Assistant has already checked the mode against fan_modes
+        vantage_fan_mode = HA_FAN_MODE_TO_VANTAGE_FAN_MODE[fan_mode]
         await self.async_request_call(self.obj.set_fan_mode(vantage_fan_mode))
 
     @override
@@ -287,7 +282,9 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
         elif self.hvac_mode == HVACMode.COOL and temp:
             await self.async_request_call(self.obj.set_cool_set_point(temp))
         else:
-            LOGGER.error("Invalid arguments for async_set_temperature in %s", kwargs)
+            raise ServiceValidationError(
+                f"Cannot set temperature with {kwargs} in HVAC mode {self.hvac_mode}"
+            )
 
 
 class VantageLegacyClimateEntity(VantageClimateEntity):
