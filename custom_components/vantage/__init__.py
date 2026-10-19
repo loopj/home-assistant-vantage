@@ -20,10 +20,13 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import HomeAssistant
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.ssl import get_default_no_verify_context
 
 from .config_entry import VantageConfigEntry, VantageData
+from .const import DOMAIN
 from .device import async_cleanup_devices, async_setup_devices
 from .entity import async_cleanup_entities
 from .events import async_setup_events
@@ -43,6 +46,17 @@ PLATFORMS: list[Platform] = [
 
 # How long to wait after receiving a system programming event before refreshing
 SYSTEM_PROGRAMMING_DELAY = 30
+
+# The integration is only set up from config entries, never from YAML
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)  # type: ignore
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Vantage integration."""
+    # Register services (start task, stop task, etc.)
+    async_register_services(hass)
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> bool:
@@ -68,9 +82,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: VantageConfigEntry) -> b
 
         # Set up each platform (lights, covers, etc.)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
-        # Register services (start task, stop task, etc.)
-        async_register_services(hass)
 
         # Generate events for button presses, etc.
         async_setup_events(hass, entry)

@@ -70,12 +70,10 @@ def async_register_services(hass: HomeAssistant) -> None:
             await task.stop()
 
     # Register services
-    if not hass.services.has_service(DOMAIN, SERVICE_START_TASK):
-        hass.services.async_register(  # type: ignore
-            DOMAIN, SERVICE_START_TASK, start_task, schema=TASK_SCHEMA
-        )
+    hass.services.async_register(  # type: ignore
+        DOMAIN, SERVICE_START_TASK, start_task, schema=TASK_SCHEMA
+    )
 
-    if not hass.services.has_service(DOMAIN, SERVICE_STOP_TASK):
-        hass.services.async_register(  # type: ignore
-            DOMAIN, SERVICE_STOP_TASK, stop_task, schema=TASK_SCHEMA
-        )
+    hass.services.async_register(  # type: ignore
+        DOMAIN, SERVICE_STOP_TASK, stop_task, schema=TASK_SCHEMA
+    )
