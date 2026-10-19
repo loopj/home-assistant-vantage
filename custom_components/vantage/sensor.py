@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
+    SensorStateClass,
 )
 from homeassistant.const import (
     LIGHT_LUX,
@@ -87,7 +88,7 @@ class VantageTempSensorEntity(VantageEntity[Temperature], SensorEntity):
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    _attr_state_class = "measurement"
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_suggested_display_precision = 1
 
     def __init__(
@@ -115,7 +116,7 @@ class VantageAnemoSensorEntity(VantageEntity[AnemoSensor], SensorEntity):
     _attr_device_class = SensorDeviceClass.WIND_SPEED
     _attr_native_unit_of_measurement = UnitOfSpeed.MILES_PER_HOUR
     _attr_should_poll = True
-    _attr_state_class = "measurement"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> Decimal | None:
@@ -129,7 +130,7 @@ class VantageLightSensorEntity(VantageEntity[LightSensor], SensorEntity):
     _attr_device_class = SensorDeviceClass.ILLUMINANCE
     _attr_native_unit_of_measurement = LIGHT_LUX
     _attr_should_poll = True
-    _attr_state_class = "measurement"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> float | None:
@@ -144,7 +145,7 @@ class VantageOmniSensorEntity(VantageEntity[OmniSensor], SensorEntity):
     """Vantage omni sensor entity."""
 
     _attr_should_poll = True
-    _attr_state_class = "measurement"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(
         self,
