@@ -211,7 +211,8 @@ class VantageGMemEntity(VantageEntity[GMem]):
     @override
     def device_info(self) -> DeviceInfo:
         # Attach variable entities to a "variables" virtual device
-        return DeviceInfo(
+        # TODO: Switch to via_device_id once hacs.json requires Home Assistant 2026.8.0
+        return DeviceInfo(  # type: ignore
             identifiers={(DOMAIN, f"{self.obj.master}:variables")},
             name="Variables",
             manufacturer="Vantage",

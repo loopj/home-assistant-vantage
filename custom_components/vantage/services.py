@@ -1,9 +1,15 @@
 """Handle Vantage service calls."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from aiovantage import Vantage
 from aiovantage.objects import Task
-import voluptuous as vol
+
+# Type check against probatio, which Home Assistant 2026.9.0 and later load as voluptuous
+# TODO: Import probatio directly once hacs.json requires Home Assistant 2026.9.0
+if TYPE_CHECKING:
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ID, ATTR_NAME
@@ -65,11 +71,11 @@ def async_register_services(hass: HomeAssistant) -> None:
 
     # Register services
     if not hass.services.has_service(DOMAIN, SERVICE_START_TASK):
-        hass.services.async_register(
+        hass.services.async_register(  # type: ignore
             DOMAIN, SERVICE_START_TASK, start_task, schema=TASK_SCHEMA
         )
 
     if not hass.services.has_service(DOMAIN, SERVICE_STOP_TASK):
-        hass.services.async_register(
+        hass.services.async_register(  # type: ignore
             DOMAIN, SERVICE_STOP_TASK, stop_task, schema=TASK_SCHEMA
         )

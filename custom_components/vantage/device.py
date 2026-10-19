@@ -126,6 +126,7 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
             device_info["serial_number"] = str(obj.serial_number)
 
     # Set up device relationships
+    # TODO: Switch to via_device_id once hacs.json requires Home Assistant 2026.8.0
     if not isinstance(obj, Master):
         if (
             isinstance(obj, ChildObject)
@@ -133,9 +134,9 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
             and not client.back_boxes.get(obj.parent.vid)
         ):
             # Attach the parent device for child objects (except for BackBoxes)
-            device_info["via_device"] = (DOMAIN, str(obj.parent.vid))
+            device_info["via_device"] = (DOMAIN, str(obj.parent.vid))  # type: ignore
         else:
             # Attach the master device for all other objects
-            device_info["via_device"] = (DOMAIN, str(obj.master))
+            device_info["via_device"] = (DOMAIN, str(obj.master))  # type: ignore
 
     return device_info

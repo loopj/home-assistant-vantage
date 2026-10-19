@@ -7,12 +7,12 @@ name = "home-assistant-vantage"
 version = "0.15.2"
 description = "Home Assistant integration for Vantage InFusion home automation controllers."
 readme = "README.md"
-requires-python = ">=3.13.2"
+requires-python = ">=3.14.2"
 authors = [{ name = "James Smith", email = "james@loopj.com" }]
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
-    "aiovantage==0.23.2",
-    "homeassistant==2026.1.0",
+    "aiovantage==0.23.3",
+    "homeassistant==2026.10.2",
     "colorlog==6.12.0",
 ]
 
@@ -21,6 +21,10 @@ dev = ["pyright==1.1.414", "ruff==0.17.0", "bumpver==2026.1132"]
 
 [tool.hatch.build.targets.wheel]
 include = ["custom_components/vantage"]
+
+[tool.ruff]
+# Stay compatible with the python 3.13 that older Home Assistant releases run on
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
