@@ -7,12 +7,12 @@ name = "home-assistant-vantage"
 version = "0.15.2"
 description = "Home Assistant integration for Vantage InFusion home automation controllers."
 readme = "README.md"
-requires-python = ">=3.13.2"
+requires-python = ">=3.14.2"
 authors = [{ name = "James Smith", email = "james@loopj.com" }]
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
     "aiovantage==0.23.3",
-    "homeassistant==2026.1.0",
+    "homeassistant==2026.10.2",
     "colorlog==6.12.0",
 ]
 
