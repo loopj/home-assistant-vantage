@@ -23,6 +23,9 @@ from homeassistant.util.color import brightness_to_value, value_to_brightness
 from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, add_entities_from_controller
 
+# Let aiovantage queue requests to the controller
+PARALLEL_UPDATES = 0
+
 # Vantage level range for converting between HA brightness and Vantage levels
 LEVEL_RANGE = (1, 100)
 
