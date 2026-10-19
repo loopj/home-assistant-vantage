@@ -140,7 +140,7 @@ class VantageGMemNumberEntity(VantageGMemEntity, NumberEntity):
     @override
     async def async_set_native_value(self, value: float) -> None:
         if self.obj.is_fixed:
-            value = int(value * 1000)
+            value = round(value * 1000)
         else:
             value = int(value)
 
