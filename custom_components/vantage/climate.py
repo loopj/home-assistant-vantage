@@ -29,6 +29,9 @@ from .config_entry import VantageConfigEntry
 from .const import LOGGER, FAN_MAX
 from .entity import VantageEntity, add_entities_from_controller
 
+# Let aiovantage queue requests to the controller
+PARALLEL_UPDATES = 0
+
 # Set up the min/max temperature range for the thermostat
 VANTAGE_MIN_TEMP = 5
 VANTAGE_MAX_TEMP = 40

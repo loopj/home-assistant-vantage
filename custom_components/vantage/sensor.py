@@ -28,6 +28,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .config_entry import VantageConfigEntry
 from .entity import VantageEntity, add_entities_from_controller
 
+# Let aiovantage queue requests to the controller
+PARALLEL_UPDATES = 0
+
 FOOT_CANDLES_TO_LUX = 10.7639
 
 OMNISENSOR_ENTITY_DESCRIPTIONS = {
