@@ -12,8 +12,15 @@ from homeassistant.core import HomeAssistant
 
 from .config_entry import VantageConfigEntry
 
-# A reset controller's password is its serial number, so redact it too
-TO_REDACT = {CONF_HOST, CONF_PASSWORD, CONF_USERNAME, "serial_number", "unique_id"}
+# Redact the serial number wherever it appears, since a reset controller uses it as its password
+TO_REDACT = {
+    CONF_HOST,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    "discovery_keys",
+    "serial_number",
+    "unique_id",
+}
 
 
 async def async_get_config_entry_diagnostics(
