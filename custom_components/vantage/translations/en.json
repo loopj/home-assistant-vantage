@@ -5,7 +5,9 @@
       "cannot_connect": "Failed to connect",
       "already_configured": "Device is already configured",
       "invalid_host": "Invalid hostname or IP address",
-      "reauth_successful": "Re-authentication was successful"
+      "reauth_successful": "Re-authentication was successful",
+      "reconfigure_successful": "Reconfiguration was successful",
+      "unique_id_mismatch": "The host belongs to a different Vantage controller."
     },
     "error": {
       "cannot_connect": "Failed to connect",
@@ -35,6 +37,16 @@
         },
         "description": "The Vantage integration at {host} needs to re-authenticate your account",
         "title": "Reauthenticate Integration"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "The IP address or hostname of your Vantage InFusion controller."
+        },
+        "description": "Enter the new IP address or hostname of your Vantage InFusion controller",
+        "title": "Reconfigure host"
       },
       "user": {
         "data": {

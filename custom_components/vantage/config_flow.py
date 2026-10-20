@@ -242,6 +242,56 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle changing the host of the Vantage controller."""
+        reconfigure_entry = self._get_reconfigure_entry()
+
+        errors: dict[str, str] | None = None
+
+        if user_input is not None:
+            # Get information about the controller at the new host
+            controller = await get_controller_details(
+                user_input[CONF_HOST], ssl_context_factory=get_default_no_verify_context
+            )
+
+            # Look up its serial number with the stored credentials
+            serial_number = None
+            if controller is not None:
+                serial_number = await get_serial_from_controller(
+                    controller.host,
+                    reconfigure_entry.data.get(CONF_USERNAME),
+                    reconfigure_entry.data.get(CONF_PASSWORD),
+                    ssl=controller.supports_ssl,
+                    ssl_context_factory=get_default_no_verify_context,
+                )
+
+            if controller is None or serial_number is None:
+                errors = {"base": "cannot_connect"}
+            else:
+                # Abort if the new host is a different controller
+                await self.async_set_unique_id(str(serial_number))
+                self._abort_if_unique_id_mismatch()
+
+                # Store the new host, reload the integration and finish the flow
+                return self.async_update_reload_and_abort(
+                    reconfigure_entry,
+                    data_updates={
+                        CONF_HOST: controller.host,
+                        CONF_SSL: controller.supports_ssl,
+                    },
+                )
+
+        # Show the reconfigure form
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                USER_SCHEMA, user_input or reconfigure_entry.data
+            ),
+            errors=errors,
+        )
+
     @staticmethod
     async def _validate_credentials(
         host: str, username: str, password: str, ssl: bool

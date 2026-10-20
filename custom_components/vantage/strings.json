@@ -5,7 +5,9 @@
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "invalid_host": "[%key:common::config_flow::error::invalid_host%]",
-      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
+      "unique_id_mismatch": "The host belongs to a different Vantage controller."
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
@@ -35,6 +37,16 @@
         },
         "description": "The Vantage integration at {host} needs to re-authenticate your account",
         "title": "[%key:common::config_flow::title::reauth%]"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]"
+        },
+        "data_description": {
+          "host": "The IP address or hostname of your Vantage InFusion controller."
+        },
+        "description": "Enter the new IP address or hostname of your Vantage InFusion controller",
+        "title": "Reconfigure host"
       },
       "user": {
         "data": {
