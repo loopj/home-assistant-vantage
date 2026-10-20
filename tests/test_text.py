@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 from aiovantage import Vantage
+from aiovantage.events import ObjectUpdated
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -15,7 +16,7 @@ from homeassistant.components.text import (
     DOMAIN as TEXT_DOMAIN,
     SERVICE_SET_VALUE,
 )
-from homeassistant.const import ATTR_ENTITY_ID, Platform
+from homeassistant.const import ATTR_ENTITY_ID, STATE_UNKNOWN, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -46,3 +47,14 @@ async def test_text(hass: HomeAssistant, mock_vantage: Vantage) -> None:
         )
 
     mock_set_value.assert_awaited_once_with("Goodbye")
+
+
+async def test_text_without_value(hass: HomeAssistant, mock_vantage: Vantage) -> None:
+    """Test a text variable that has no value."""
+    obj = mock_vantage.gmem[52]
+    obj.value = None
+    mock_vantage.gmem.emit(ObjectUpdated(obj, ["value"]))
+    await hass.async_block_till_done()
+
+    assert (state := hass.states.get("text.variables_message"))
+    assert state.state == STATE_UNKNOWN

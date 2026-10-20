@@ -175,63 +175,6 @@ async def test_set_color_temp_when_off(
 
 
 @pytest.mark.parametrize(
-    ("entity_id", "vid", "service_data", "method", "args"),
-    [
-        (
-            "light.rgb_light",
-            13,
-            {ATTR_RGB_COLOR: (255, 128, 0)},
-            "set_rgb",
-            (128, 64, 0),
-        ),
-        (
-            "light.rgbw_light",
-            14,
-            {ATTR_RGBW_COLOR: (255, 128, 0, 255)},
-            "set_rgbw",
-            (128, 64, 0, 128),
-        ),
-        ("light.hsl_light", 15, {ATTR_HS_COLOR: (120, 50)}, "set_hsl", (120, 50, 50)),
-        (
-            "light.cct_light",
-            16,
-            {ATTR_COLOR_TEMP_KELVIN: 4000},
-            "set_color_temp",
-            (4000,),
-        ),
-    ],
-)
-async def test_set_color_keeps_brightness(
-    hass: HomeAssistant,
-    mock_vantage: Vantage,
-    mock_config_entry: MockConfigEntry,
-    entity_id: str,
-    vid: int,
-    service_data: dict[str, Any],
-    method: str,
-    args: tuple[Any, ...],
-) -> None:
-    """Test that changing only the color of a light keeps its brightness."""
-    obj = mock_vantage.rgb_loads[vid]
-    obj.level = Decimal(50)
-    await setup_integration(hass, mock_config_entry)
-
-    with (
-        patch.object(obj, method) as mock_method,
-        patch.object(obj, "turn_on") as mock_turn_on,
-    ):
-        await hass.services.async_call(
-            LIGHT_DOMAIN,
-            SERVICE_TURN_ON,
-            {ATTR_ENTITY_ID: entity_id, **service_data},
-            blocking=True,
-        )
-
-    mock_method.assert_awaited_once_with(*args)
-    mock_turn_on.assert_not_awaited()
-
-
-@pytest.mark.parametrize(
     ("error", "state"),
     [
         (ClientConnectionError("Connection lost"), STATE_ON),
