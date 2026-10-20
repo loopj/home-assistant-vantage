@@ -1,0 +1,65 @@
+# serializer version: 1
+# name: test_entry_diagnostics
+  dict({
+    'config_entry': dict({
+      'data': dict({
+        'host': '**REDACTED**',
+        'password': '**REDACTED**',
+        'ssl': True,
+        'username': '**REDACTED**',
+      }),
+      'disabled_by': None,
+      'discovery_keys': dict({
+      }),
+      'domain': 'vantage',
+      'minor_version': 1,
+      'options': dict({
+      }),
+      'pref_disable_new_entities': False,
+      'pref_disable_polling': False,
+      'source': 'user',
+      'subentries': list([
+      ]),
+      'title': 'Vantage InFusion',
+      'unique_id': '**REDACTED**',
+      'version': 1,
+    }),
+    'connected': True,
+    'master_number': None,
+    'masters': list([
+      dict({
+        'firmware': '4.1.1.4',
+        'model': '',
+        'name': 'Controller 1',
+        'number': 1,
+        'serial_number': '**REDACTED**',
+        'vid': 1,
+      }),
+    ]),
+    'objects': dict({
+      'AnemoSensor': 1,
+      'Area': 1,
+      'BlindGroup': 1,
+      'Button': 1,
+      'DryContact': 1,
+      'GMem': 4,
+      'Keypad': 1,
+      'LightSensor': 1,
+      'Load': 3,
+      'LoadGroup': 1,
+      'Master': 1,
+      'Module': 1,
+      'OmniSensor': 1,
+      'PowerProfile': 1,
+      'QISBlind': 1,
+      'Task': 1,
+      'Temperature': 3,
+      'Thermostat': 1,
+      'VantageDGColorLoad': 4,
+      'VantageGenericHVACRS485ZoneChild': 1,
+    }),
+    'peers': list([
+    ]),
+    'status_type': None,
+  })
+# ---
