@@ -12,7 +12,7 @@ async def async_migrate_data(hass: HomeAssistant, entry: VantageConfigEntry) -> 
     """Run all Vantage data migrations."""
 
     async_delete_back_boxes(hass, entry)
-    async_delete_serial_number_entities(hass, entry)
+    async_delete_removed_entities(hass, entry)
 
 
 def async_delete_back_boxes(hass: HomeAssistant, entry: VantageConfigEntry) -> None:
@@ -32,22 +32,22 @@ def async_delete_back_boxes(hass: HomeAssistant, entry: VantageConfigEntry) -> N
             dev_reg.async_remove_device(device.id)
 
 
-def async_delete_serial_number_entities(
+def async_delete_removed_entities(
     hass: HomeAssistant, entry: VantageConfigEntry
 ) -> None:
-    """Delete serial number entities from the entity registry."""
+    """Delete serial number and IP address entities from the entity registry."""
     ent_reg = er.async_get(hass)
 
-    serial_number_entities = [
+    removed_entities = [
         entity
         for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id)
-        if entity.unique_id.endswith(":serial_number")
+        if entity.unique_id.endswith((":serial_number", ":ip_address"))
     ]
 
-    if serial_number_entities:
+    if removed_entities:
         LOGGER.debug(
-            f"Deleting {len(serial_number_entities)} serial number entities from the registry."
+            f"Deleting {len(removed_entities)} removed entities from the registry."
         )
 
-        for entity in serial_number_entities:
+        for entity in removed_entities:
             ent_reg.async_remove(entity.entity_id)

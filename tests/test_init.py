@@ -122,6 +122,9 @@ async def test_stale_registry_entries_removed(
     serial_number = entity_registry.async_get_or_create(
         "sensor", DOMAIN, "1:serial_number", config_entry=mock_config_entry
     )
+    ip_address = entity_registry.async_get_or_create(
+        "sensor", DOMAIN, "1:ip_address", config_entry=mock_config_entry
+    )
 
     await setup_integration(hass, mock_config_entry)
 
@@ -129,6 +132,7 @@ async def test_stale_registry_entries_removed(
     assert device_registry.async_get(back_box.id) is None
     assert entity_registry.async_get(stale_entity.entity_id) is None
     assert entity_registry.async_get(serial_number.entity_id) is None
+    assert entity_registry.async_get(ip_address.entity_id) is None
 
 
 async def test_dynamic_objects(
