@@ -13,6 +13,11 @@
           }
         }
       }
+    },
+    "light": {
+      "load_group": {
+        "default": "mdi:lightbulb-group"
+      }
     }
   }
 }
