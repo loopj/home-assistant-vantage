@@ -45,7 +45,7 @@ async def test_task_not_found(
     """Test starting a task the controller does not have."""
     with pytest.raises(
         ServiceValidationError,
-        match="Task 'Good Morning' not found in any Vantage controller",
+        match='Task "Good Morning" not found in any Vantage controller',
     ):
         await hass.services.async_call(
             DOMAIN, SERVICE_START_TASK, {ATTR_NAME: "Good Morning"}, blocking=True
@@ -55,8 +55,8 @@ async def test_task_not_found(
 @pytest.mark.parametrize(
     ("service", "method", "error_match"),
     [
-        (SERVICE_START_TASK, "start", "Failed to start task 'Goodnight'"),
-        (SERVICE_STOP_TASK, "stop", "Failed to stop task 'Goodnight'"),
+        (SERVICE_START_TASK, "start", 'Failed to start task "Goodnight"'),
+        (SERVICE_STOP_TASK, "stop", 'Failed to stop task "Goodnight"'),
     ],
 )
 async def test_task_action_error(
