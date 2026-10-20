@@ -1,28 +1,6 @@
 # serializer version: 1
 # name: test_entry_diagnostics
   dict({
-    'config_entry': dict({
-      'data': dict({
-        'host': '**REDACTED**',
-        'password': '**REDACTED**',
-        'ssl': True,
-        'username': '**REDACTED**',
-      }),
-      'disabled_by': None,
-      'discovery_keys': '**REDACTED**',
-      'domain': 'vantage',
-      'minor_version': 1,
-      'options': dict({
-      }),
-      'pref_disable_new_entities': False,
-      'pref_disable_polling': False,
-      'source': 'user',
-      'subentries': list([
-      ]),
-      'title': 'Vantage InFusion',
-      'unique_id': '**REDACTED**',
-      'version': 1,
-    }),
     'connected': True,
     'master_number': None,
     'masters': list([
@@ -31,7 +9,6 @@
         'model': '',
         'name': 'Controller 1',
         'number': 1,
-        'serial_number': '**REDACTED**',
         'vid': 1,
       }),
     ]),
@@ -59,6 +36,7 @@
     }),
     'peers': list([
     ]),
+    'ssl': True,
     'status_type': None,
   })
 # ---
