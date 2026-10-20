@@ -331,3 +331,75 @@ async def test_reauth_flow(
         CONF_USERNAME: "installer",
         CONF_PASSWORD: "new-secret",
     }
+
+
+async def test_reconfigure_flow(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_get_controller_details: AsyncMock,
+) -> None:
+    """Test moving the integration to a new host."""
+    mock_config_entry.add_to_hass(hass)
+    mock_get_controller_details.return_value = VantageControllerDetails(
+        "192.168.1.200", supports_ssl=False, requires_auth=True
+    )
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_HOST: "192.168.1.200"}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.data[CONF_HOST] == "192.168.1.200"
+    assert mock_config_entry.data[CONF_SSL] is False
+
+
+async def test_reconfigure_flow_cannot_connect(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_get_controller_details: AsyncMock,
+) -> None:
+    """Test the reconfigure step shows an error until the controller can be reached."""
+    mock_config_entry.add_to_hass(hass)
+    details = mock_get_controller_details.return_value
+    mock_get_controller_details.return_value = None
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_HOST: HOST}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+
+    mock_get_controller_details.return_value = details
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_HOST: HOST}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+
+
+async def test_reconfigure_to_different_controller(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_get_serial_from_controller: AsyncMock,
+) -> None:
+    """Test that the integration cannot be moved to a different controller."""
+    mock_config_entry.add_to_hass(hass)
+    mock_get_serial_from_controller.return_value = 87654321
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_HOST: "192.168.1.200"}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unique_id_mismatch"
+    assert mock_config_entry.data[CONF_HOST] == HOST
