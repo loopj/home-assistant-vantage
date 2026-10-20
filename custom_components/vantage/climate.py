@@ -28,7 +28,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
-from .const import FAN_MAX
+from .const import DOMAIN, FAN_MAX
 from .entity import VantageEntity, add_entities_from_controller
 
 # Let aiovantage queue requests to the controller
@@ -295,7 +295,9 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
             await self.async_request_call(self.obj.set_cool_set_point(temp))
         else:
             raise ServiceValidationError(
-                f"Cannot set temperature with {kwargs} in HVAC mode {hvac_mode}"
+                translation_domain=DOMAIN,
+                translation_key="set_temperature_unsupported",
+                translation_placeholders={"hvac_mode": str(hvac_mode)},
             )
 
 

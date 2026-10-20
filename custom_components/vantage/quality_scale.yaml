@@ -62,7 +62,7 @@ rules:
   entity-translations:
     status: exempt
     comment: Entity names come from the names of objects in the Vantage project.
-  exception-translations: todo
+  exception-translations: done
   icon-translations: done
   reconfiguration-flow: done
   repair-issues:

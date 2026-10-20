@@ -127,7 +127,12 @@ class VantageEntity[T: SystemObject](Entity):
                 self.async_write_ha_state()
 
             raise HomeAssistantError(
-                f"Request for {self.entity_id} failed: {err}"
+                translation_domain=DOMAIN,
+                translation_key="request_failed",
+                translation_placeholders={
+                    "entity_id": self.entity_id,
+                    "error": str(err),
+                },
             ) from err
 
     @override
