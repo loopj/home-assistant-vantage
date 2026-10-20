@@ -23,6 +23,8 @@ The features of this integration include:
 
 ## Prerequisites
 
+This integration supports Home Assistant versions from the last six months. If you run an older version, you can install an older release through HACS.
+
 If your Vantage controller requires authentication (most do by default) you'll need to know a username and password to continue.
 
 If you don't know your username and password, you can reset the password for the *administrator* user if you have physical access to the controller. When resetting your password, it will revert to the serial number of your controller. Alternatively, if you are working with a Vantage dealer, they can provide these credentials.
