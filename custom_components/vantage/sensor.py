@@ -1,12 +1,10 @@
 """Support for Vantage sensor entities."""
 
-import contextlib
 from decimal import Decimal
-import socket
 from typing import override
 
 from aiovantage.controllers import Controller
-from aiovantage.objects import AnemoSensor, LightSensor, Master, OmniSensor, Temperature
+from aiovantage.objects import AnemoSensor, LightSensor, OmniSensor, Temperature
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -16,7 +14,6 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     LIGHT_LUX,
-    EntityCategory,
     UnitOfElectricCurrent,
     UnitOfPower,
     UnitOfSpeed,
@@ -78,11 +75,6 @@ async def async_setup_entry(
     # Add all omni sensor objects as sensor entities
     add_entities_from_controller(
         entry, async_add_entities, VantageOmniSensorEntity, vantage.omni_sensors
-    )
-
-    # Add all master IP addresses as sensor entities
-    add_entities_from_controller(
-        entry, async_add_entities, VantageMasterIPSensorEntity, vantage.masters
     )
 
 
@@ -172,23 +164,3 @@ class VantageOmniSensorEntity(VantageEntity[OmniSensor], SensorEntity):
     @override
     def native_value(self) -> int | Decimal | None:
         return self.obj.level
-
-
-class VantageMasterIPSensorEntity(VantageEntity[Master], SensorEntity):
-    """Vantage controller IP address sensor entity."""
-
-    _attr_icon = "mdi:ip"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    @property
-    @override
-    def unique_id(self) -> str:
-        return f"{self.obj.vid}:ip_address"
-
-    @property
-    @override
-    def native_value(self) -> str | None:
-        with contextlib.suppress(socket.gaierror):
-            return socket.gethostbyname(self.client.host)
-
-        return None
