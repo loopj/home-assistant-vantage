@@ -18,7 +18,7 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry."""
     vantage = entry.runtime_data.client
 
-    # Describe each controller, leaving out the serial number a reset controller uses as its password
+    # Describe each controller
     masters: list[dict[str, Any]] = []
     for master in vantage.masters:
         firmware = None
