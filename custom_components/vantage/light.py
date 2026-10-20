@@ -124,7 +124,7 @@ class VantageLoadLightEntity(VantageEntity[Load], LightEntity):
 class VantageLoadGroupLightEntity(VantageEntity[LoadGroup], LightEntity):
     """Vantage load group light entity."""
 
-    _attr_icon = "mdi:lightbulb-group"
+    _attr_translation_key = "load_group"
     _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
     _attr_color_mode = ColorMode.BRIGHTNESS
     _attr_supported_features = LightEntityFeature.TRANSITION
