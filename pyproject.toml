@@ -11,7 +11,7 @@ requires-python = ">=3.14.2"
 authors = [{ name = "James Smith", email = "james@loopj.com" }]
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
-    "aiovantage==0.23.3",
+    "aiovantage==0.23.4",
     "homeassistant==2026.10.2",
     "colorlog==6.12.0",
 ]
