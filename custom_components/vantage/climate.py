@@ -8,6 +8,7 @@ from aiovantage.object_interfaces import FanInterface, ThermostatInterface
 from aiovantage.objects import Temperature, Thermostat
 
 from homeassistant.components.climate import (
+    ATTR_HVAC_MODE,
     ATTR_TARGET_TEMP_HIGH,
     ATTR_TARGET_TEMP_LOW,
     FAN_AUTO,
@@ -280,16 +281,21 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
         high_temp = kwargs.get(ATTR_TARGET_TEMP_HIGH)
         temp = kwargs.get(ATTR_TEMPERATURE)
 
-        if self.hvac_mode == HVACMode.HEAT_COOL and low_temp and high_temp:
+        # Switch mode first, and pick the set point for the requested mode
+        hvac_mode = kwargs.get(ATTR_HVAC_MODE, self.hvac_mode)
+        if ATTR_HVAC_MODE in kwargs:
+            await self.async_set_hvac_mode(hvac_mode)
+
+        if hvac_mode == HVACMode.HEAT_COOL and low_temp and high_temp:
             await self.async_request_call(self.obj.set_cool_set_point(high_temp))
             await self.async_request_call(self.obj.set_heat_set_point(low_temp))
-        elif self.hvac_mode == HVACMode.HEAT and temp:
+        elif hvac_mode == HVACMode.HEAT and temp:
             await self.async_request_call(self.obj.set_heat_set_point(temp))
-        elif self.hvac_mode == HVACMode.COOL and temp:
+        elif hvac_mode == HVACMode.COOL and temp:
             await self.async_request_call(self.obj.set_cool_set_point(temp))
         else:
             raise ServiceValidationError(
-                f"Cannot set temperature with {kwargs} in HVAC mode {self.hvac_mode}"
+                f"Cannot set temperature with {kwargs} in HVAC mode {hvac_mode}"
             )
 
 

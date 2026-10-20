@@ -124,6 +124,7 @@ class VantageEntity[T: SystemObject](Entity):
                 # unavailable. This can happen when the user deletes an object from the
                 # Vantage project and we haven't refreshed the entity registry yet.
                 self._attr_available = False
+                self.async_write_ha_state()
 
             raise HomeAssistantError(
                 f"Request for {self.entity_id} failed: {err}"
