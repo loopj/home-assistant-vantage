@@ -52,7 +52,9 @@ def async_register_services(hass: HomeAssistant) -> None:
                 return task
 
         raise ServiceValidationError(
-            f"Task '{id_or_name}' not found in any Vantage controller"
+            translation_domain=DOMAIN,
+            translation_key="task_not_found",
+            translation_placeholders={"task": str(id_or_name)},
         )
 
     async def start_task(call: ServiceCall) -> None:
@@ -63,7 +65,9 @@ def async_register_services(hass: HomeAssistant) -> None:
             await task.start()
         except ClientError as err:
             raise HomeAssistantError(
-                f"Failed to start task '{task.name}': {err}"
+                translation_domain=DOMAIN,
+                translation_key="start_task_failed",
+                translation_placeholders={"task": task.name, "error": str(err)},
             ) from err
 
     async def stop_task(call: ServiceCall) -> None:
@@ -74,7 +78,9 @@ def async_register_services(hass: HomeAssistant) -> None:
             await task.stop()
         except ClientError as err:
             raise HomeAssistantError(
-                f"Failed to stop task '{task.name}': {err}"
+                translation_domain=DOMAIN,
+                translation_key="stop_task_failed",
+                translation_placeholders={"task": task.name, "error": str(err)},
             ) from err
 
     # Register services

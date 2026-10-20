@@ -76,5 +76,22 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "request_failed": {
+      "message": "Request for {entity_id} failed: {error}"
+    },
+    "set_temperature_unsupported": {
+      "message": "Cannot set temperature in HVAC mode {hvac_mode}"
+    },
+    "start_task_failed": {
+      "message": "Failed to start task \"{task}\": {error}"
+    },
+    "stop_task_failed": {
+      "message": "Failed to stop task \"{task}\": {error}"
+    },
+    "task_not_found": {
+      "message": "Task \"{task}\" not found in any Vantage controller"
+    }
   }
 }
