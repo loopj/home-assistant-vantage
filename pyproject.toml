@@ -21,7 +21,7 @@ dev = [
     "pyright==1.1.414",
     "ruff==0.17.3",
     "bumpver==2026.1132",
-    "pytest-homeassistant-custom-component==0.13.373",
+    "pytest-homeassistant-custom-component==0.13.375",
 ]
 
 [tool.hatch.build.targets.wheel]
