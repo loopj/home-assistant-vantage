@@ -3,7 +3,6 @@
 import contextlib
 from typing import Protocol, runtime_checkable
 
-from aiovantage import Vantage
 from aiovantage.controllers import Controller
 from aiovantage.errors import CommandError
 from aiovantage.events import ObjectAdded, ObjectDeleted, ObjectUpdated
@@ -22,17 +21,20 @@ from homeassistant.helpers.entity import DeviceInfo
 from .config_entry import VantageConfigEntry
 from .const import DOMAIN
 
+# Home Assistant 2026.8 replaced via_device with via_device_id
+# TODO: Drop via_device once hacs.json requires Home Assistant 2026.8.0
+USE_VIA_DEVICE_ID = hasattr(dr.DeviceRegistry, "async_get_device_by_identifier")
+
 
 async def add_devices_from_controller[T: SystemObject](
     hass: HomeAssistant, entry: VantageConfigEntry, controller: Controller[T]
 ) -> None:
     """Add devices to the device registry from a Vantage controller."""
-    vantage = entry.runtime_data.client
     dev_reg = dr.async_get(hass)
 
     # Register a device in the device registry
     async def add_or_update_device(obj: T) -> None:
-        device_info = vantage_device_info(vantage, obj)
+        device_info = vantage_device_info(hass, entry, obj)
         if isinstance(obj, Master):
             with contextlib.suppress(CommandError):
                 device_info["sw_version"] = await obj.get_application_version()
@@ -94,8 +96,28 @@ class ChildObject(Protocol):
     parent: Parent
 
 
-def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
+def via_device_info(
+    hass: HomeAssistant, entry: VantageConfigEntry, identifier: str
+) -> DeviceInfo:
+    """Build the device info linking a device to its parent device."""
+    if not USE_VIA_DEVICE_ID:
+        return DeviceInfo(via_device=(DOMAIN, identifier))  # type: ignore
+
+    # Link by registry id, leaving the link unset until the parent is registered
+    dev_reg = dr.async_get(hass)
+    if parent := dev_reg.async_get_device_by_identifier(
+        (DOMAIN, identifier), entry.entry_id
+    ):
+        return DeviceInfo(via_device_id=parent.id)
+
+    return DeviceInfo()
+
+
+def vantage_device_info(
+    hass: HomeAssistant, entry: VantageConfigEntry, obj: SystemObject
+) -> DeviceInfo:
     """Build the device info for a Vantage object."""
+    client = entry.runtime_data.client
     device_info = DeviceInfo(
         identifiers={(DOMAIN, str(obj.vid))},
         name=obj.d_name or obj.name,
@@ -126,7 +148,6 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
             device_info["serial_number"] = str(obj.serial_number)
 
     # Set up device relationships
-    # TODO: Switch to via_device_id once hacs.json requires Home Assistant 2026.8.0
     if not isinstance(obj, Master):
         if (
             isinstance(obj, ChildObject)
@@ -134,9 +155,9 @@ def vantage_device_info(client: Vantage, obj: SystemObject) -> DeviceInfo:
             and not client.back_boxes.get(obj.parent.vid)
         ):
             # Attach the parent device for child objects (except for BackBoxes)
-            device_info["via_device"] = (DOMAIN, str(obj.parent.vid))  # type: ignore
+            device_info.update(via_device_info(hass, entry, str(obj.parent.vid)))
         else:
             # Attach the master device for all other objects
-            device_info["via_device"] = (DOMAIN, str(obj.master))  # type: ignore
+            device_info.update(via_device_info(hass, entry, str(obj.master)))
 
     return device_info

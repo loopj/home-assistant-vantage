@@ -23,7 +23,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry import VantageConfigEntry
 from .const import DOMAIN, LOGGER
-from .device import vantage_device_info
+from .device import vantage_device_info, via_device_info
 
 
 def add_entities_from_controller[T: SystemObject](
@@ -102,9 +102,9 @@ class VantageEntity[T: SystemObject](Entity):
     @override
     def device_info(self) -> DeviceInfo:
         if self.parent_obj:
-            return vantage_device_info(self.client, self.parent_obj)
+            return vantage_device_info(self.hass, self.entry, self.parent_obj)
 
-        return vantage_device_info(self.client, self.obj)
+        return vantage_device_info(self.hass, self.entry, self.obj)
 
     @property
     @override
@@ -178,7 +178,7 @@ class VantageEntity[T: SystemObject](Entity):
             if self.registry_entry and self.registry_entry.config_entry_id:
                 dev_reg.async_get_or_create(
                     config_entry_id=self.registry_entry.config_entry_id,
-                    **vantage_device_info(self.client, self.obj),
+                    **vantage_device_info(self.hass, self.entry, self.obj),
                 )
 
         # Tell HA the state has changed.
@@ -217,12 +217,14 @@ class VantageGMemEntity(VantageEntity[GMem]):
     @override
     def device_info(self) -> DeviceInfo:
         # Attach variable entities to a "variables" virtual device
-        # TODO: Switch to via_device_id once hacs.json requires Home Assistant 2026.8.0
-        return DeviceInfo(  # type: ignore
+        device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{self.obj.master}:variables")},
             name="Variables",
             manufacturer="Vantage",
             model="Variables",
             entry_type=dr.DeviceEntryType.SERVICE,
-            via_device=(DOMAIN, str(self.obj.master)),
         )
+
+        # Attach the master device
+        device_info.update(via_device_info(self.hass, self.entry, str(self.obj.master)))
+        return device_info
