@@ -119,7 +119,8 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
 
     _attr_max_temp = VANTAGE_MAX_TEMP
     _attr_min_temp = VANTAGE_MIN_TEMP
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    # Use the pre-2026.11 climate property names until we drop older Home Assistant
+    _attr_temperature_unit = UnitOfTemperature.CELSIUS  # pyright: ignore[reportGeneralTypeIssues]
     _attr_supported_features = (
         ClimateEntityFeature.FAN_MODE
         | ClimateEntityFeature.TARGET_TEMPERATURE
@@ -151,7 +152,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
             ThermostatInterface, ThermostatInterface.OperationMode
         )
 
-    @property
+    @property  # pyright: ignore[reportGeneralTypeIssues]
     @override
     def current_temperature(self) -> float | None:
         if self.obj.indoor_temperature is not None:
@@ -222,7 +223,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
             is not None
         ]
 
-    @property
+    @property  # pyright: ignore[reportGeneralTypeIssues]
     @override
     def target_temperature(self) -> float | None:
         if self.hvac_mode == HVACMode.HEAT:
@@ -235,7 +236,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
 
         return None
 
-    @property
+    @property  # pyright: ignore[reportGeneralTypeIssues]
     @override
     def target_temperature_high(self) -> float | None:
         if self.hvac_mode != HVACMode.HEAT_COOL:
@@ -246,7 +247,7 @@ class VantageClimateEntity(VantageEntity[ThermostatTypes], ClimateEntity):
 
         return None
 
-    @property
+    @property  # pyright: ignore[reportGeneralTypeIssues]
     @override
     def target_temperature_low(self) -> float | None:
         if self.hvac_mode != HVACMode.HEAT_COOL:

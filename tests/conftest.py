@@ -33,8 +33,8 @@ from aiovantage.objects import (
 )
 from aiovantage.object_interfaces import FanInterface, ThermostatInterface
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-from pytest_homeassistant_custom_component.syrupy import HomeAssistantSnapshotExtension
+from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.syrupy import HomeAssistantSnapshotExtension
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.vantage.const import DOMAIN
@@ -47,11 +47,6 @@ HOST = "192.168.1.100"
 SERIAL_NUMBER = 12345678
 USERNAME = "administrator"
 PASSWORD = "secret"
-
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
-    """Let Home Assistant load the integration from custom_components."""
 
 
 @pytest.fixture(autouse=True)

@@ -5,7 +5,7 @@ from unittest.mock import patch
 from aiovantage import Vantage
 from aiovantage.errors import ClientConnectionError
 import pytest
-from pytest_homeassistant_custom_component.common import (
+from pytest_homeassistant.common import (
     MockConfigEntry,
     snapshot_platform,
 )

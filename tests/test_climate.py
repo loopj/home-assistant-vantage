@@ -8,7 +8,7 @@ from aiovantage import Vantage
 from aiovantage.events import ObjectUpdated
 from aiovantage.object_interfaces import FanInterface, ThermostatInterface
 import pytest
-from pytest_homeassistant_custom_component.common import (
+from pytest_homeassistant.common import (
     MockConfigEntry,
     snapshot_platform,
 )

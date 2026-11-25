@@ -13,7 +13,7 @@ from aiovantage.events import (
     Reconnected,
 )
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.vantage.const import DOMAIN
 from homeassistant.config_entries import ConfigEntryState

@@ -6,7 +6,7 @@ from aiovantage import Vantage
 from aiovantage.events import ObjectUpdated
 from aiovantage.objects import Button
 import pytest
-from pytest_homeassistant_custom_component.common import async_capture_events
+from pytest_homeassistant.common import async_capture_events
 
 from homeassistant.core import HomeAssistant
 
